@@ -1,0 +1,6968 @@
+openapi: 3.0.3
+info:
+  title: PHARMASKY
+  version: 1.0.0
+  description: PHARMASKY API
+paths:
+  /accounts/login/:
+    post:
+      operationId: accounts_login_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /accounts/register/pharmacy/:
+    post:
+      operationId: accounts_register_pharmacy_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PharmacyCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PharmacyCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PharmacyCreate'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PharmacyCreate'
+          description: ''
+  /accounts/simple-users/:
+    get:
+      operationId: accounts_simple_users_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          enum:
+          - ADMIN
+          - AREA_MANAGER
+          - DATA_ENTRY
+          - DELIVERY
+          - MANAGER
+          - PHARMACY
+          - SALES
+          - STORE
+        description: |-
+          * `ADMIN` - Admin
+          * `PHARMACY` - Pharmacy
+          * `DELIVERY` - Delivery
+          * `STORE` - Store
+          * `MANAGER` - Manager
+          * `SALES` - Sales
+          * `DATA_ENTRY` - Data entry
+          * `AREA_MANAGER` - Area manager
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - accounts
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserReadList'
+          description: ''
+  /accounts/users/:
+    get:
+      operationId: accounts_users_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - accounts
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserFullReadList'
+          description: ''
+  /accounts/users/{id}/:
+    get:
+      operationId: accounts_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFullRead'
+          description: ''
+  /accounts/whoami/:
+    post:
+      operationId: accounts_whoami_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRead'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRead'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRead'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+          description: ''
+  /ads/:
+    get:
+      operationId: ads_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - ads
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdvertismentRead'
+          description: ''
+  /finance/account-transactions/:
+    get:
+      operationId: finance_account_transactions_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccountTransactionReadList'
+          description: ''
+  /finance/accounts/{id}/change/:
+    put:
+      operationId: finance_accounts_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountUpdate'
+          description: ''
+    patch:
+      operationId: finance_accounts_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountUpdate'
+          description: ''
+  /finance/purchase-payments/:
+    get:
+      operationId: finance_purchase_payments_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchasePaymentReadList'
+          description: ''
+  /finance/purchase-payments/{id}/change/:
+    put:
+      operationId: finance_purchase_payments_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchasePaymentUpdate'
+          description: ''
+    patch:
+      operationId: finance_purchase_payments_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchasePaymentUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchasePaymentUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchasePaymentUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchasePaymentUpdate'
+          description: ''
+  /finance/purchase-payments/{id}/destroy/:
+    delete:
+      operationId: finance_purchase_payments_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /finance/purchase-payments/create/:
+    post:
+      operationId: finance_purchase_payments_create_create
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchasePaymentCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchasePaymentCreate'
+          description: ''
+  /finance/safe/:
+    get:
+      operationId: finance_safe_retrieve
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Safe'
+          description: ''
+  /finance/safe-transactions/:
+    get:
+      operationId: finance_safe_transactions_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSafeTransactionList'
+          description: ''
+  /finance/safe-transactions/create/:
+    post:
+      operationId: finance_safe_transactions_create_create
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SafeTransaction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SafeTransaction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SafeTransaction'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafeTransaction'
+          description: ''
+  /finance/sale-payments/:
+    get:
+      operationId: finance_sale_payments_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSalePaymentReadList'
+          description: ''
+  /finance/sale-payments/{id}/change/:
+    put:
+      operationId: finance_sale_payments_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalePaymentUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SalePaymentUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SalePaymentUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalePaymentUpdate'
+          description: ''
+    patch:
+      operationId: finance_sale_payments_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSalePaymentUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSalePaymentUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSalePaymentUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalePaymentUpdate'
+          description: ''
+  /finance/sale-payments/{id}/destroy/:
+    delete:
+      operationId: finance_sale_payments_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /finance/sale-payments/create/:
+    post:
+      operationId: finance_sale_payments_create_create
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalePaymentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SalePaymentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SalePaymentCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalePaymentCreate'
+          description: ''
+  /inventory/inventories/:
+    get:
+      operationId: inventory_inventories_list
+      parameters:
+      - in: query
+        name: ex_id
+        schema:
+          type: integer
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - inventory
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInventoryReadList'
+          description: ''
+  /inventory/inventories/{id}/:
+    get:
+      operationId: inventory_inventories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryRead'
+          description: ''
+  /inventory/inventories/{id}/change/:
+    put:
+      operationId: inventory_inventories_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryUpdate'
+          description: ''
+    patch:
+      operationId: inventory_inventories_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryUpdate'
+          description: ''
+  /inventory/inventories/create/:
+    post:
+      operationId: inventory_inventories_create_create
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryCreate'
+          description: ''
+  /inventory/inventory-items/:
+    get:
+      operationId: inventory_inventory_items_list
+      parameters:
+      - in: query
+        name: inventory
+        schema:
+          type: string
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - inventory
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInventoryItemReadList'
+          description: ''
+  /inventory/inventory-items/{id}/:
+    get:
+      operationId: inventory_inventory_items_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemRead'
+          description: ''
+  /inventory/inventory-items/{id}/change/:
+    put:
+      operationId: inventory_inventory_items_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryItemUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemUpdate'
+          description: ''
+    patch:
+      operationId: inventory_inventory_items_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemUpdate'
+          description: ''
+  /inventory/inventory-items/{id}/change-inventory/:
+    put:
+      operationId: inventory_inventory_items_change_inventory_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemTransfer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryItemTransfer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryItemTransfer'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemTransfer'
+          description: ''
+    patch:
+      operationId: inventory_inventory_items_change_inventory_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemTransfer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemTransfer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemTransfer'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemTransfer'
+          description: ''
+  /inventory/inventory-items/{id}/destroy/:
+    delete:
+      operationId: inventory_inventory_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - inventory
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /inventory/inventory-items/create/:
+    post:
+      operationId: inventory_inventory_items_create_create
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemCreate'
+          description: ''
+  /invoices/purchase-invoice-items/:
+    get:
+      operationId: invoices_purchase_invoice_items_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseInvoiceItemReadList'
+          description: ''
+  /invoices/purchase-invoice-items/{id}/change-state/:
+    put:
+      operationId: invoices_purchase_invoice_items_change_state_update_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_purchase_invoice_items_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceItemStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          description: ''
+  /invoices/purchase-invoice-items/{id}/destroy/:
+    delete:
+      operationId: invoices_purchase_invoice_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /invoices/purchase-invoice-items/change-state/:
+    put:
+      operationId: invoices_purchase_invoice_items_change_state_update
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceItemStateUpdate'
+          description: ''
+  /invoices/purchase-invoice-items/create/:
+    post:
+      operationId: invoices_purchase_invoice_items_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceItemCreate'
+          description: ''
+  /invoices/purchase-invoices/:
+    get:
+      operationId: invoices_purchase_invoices_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseInvoiceReadList'
+          description: ''
+  /invoices/purchase-invoices/{id}/:
+    get:
+      operationId: invoices_purchase_invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceRead'
+          description: ''
+  /invoices/purchase-invoices/{id}/change-state/:
+    put:
+      operationId: invoices_purchase_invoices_change_state_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_purchase_invoices_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseInvoiceStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceStateUpdate'
+          description: ''
+  /invoices/purchase-invoices/create/:
+    post:
+      operationId: invoices_purchase_invoices_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseInvoiceCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseInvoiceCreate'
+          description: ''
+  /invoices/purchase-return-invoice-items/:
+    get:
+      operationId: invoices_purchase_return_invoice_items_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseReturnInvoiceItemReadList'
+          description: ''
+  /invoices/purchase-return-invoice-items/{id}/change/:
+    put:
+      operationId: invoices_purchase_return_invoice_items_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceItemUpdate'
+          description: ''
+    patch:
+      operationId: invoices_purchase_return_invoice_items_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceItemUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceItemUpdate'
+          description: ''
+  /invoices/purchase-return-invoice-items/{id}/destroy/:
+    delete:
+      operationId: invoices_purchase_return_invoice_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /invoices/purchase-return-invoice-items/create/:
+    post:
+      operationId: invoices_purchase_return_invoice_items_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceItemCreate'
+          description: ''
+  /invoices/purchase-return-invoices/:
+    get:
+      operationId: invoices_purchase_return_invoices_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseReturnInvoiceReadList'
+          description: ''
+  /invoices/purchase-return-invoices/{id}/:
+    get:
+      operationId: invoices_purchase_return_invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceRead'
+          description: ''
+  /invoices/purchase-return-invoices/{id}/change-state/:
+    put:
+      operationId: invoices_purchase_return_invoices_change_state_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_purchase_return_invoices_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnInvoiceStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceStateUpdate'
+          description: ''
+  /invoices/purchase-return-invoices/create/:
+    post:
+      operationId: invoices_purchase_return_invoices_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnInvoiceCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseReturnInvoiceCreate'
+          description: ''
+  /invoices/sale-invoice-items/:
+    get:
+      operationId: invoices_sale_invoice_items_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSaleInvoiceItemReadList'
+          description: ''
+  /invoices/sale-invoice-items/{id}/change/:
+    put:
+      operationId: invoices_sale_invoice_items_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemUpdate'
+          description: ''
+    patch:
+      operationId: invoices_sale_invoice_items_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemUpdate'
+          description: ''
+  /invoices/sale-invoice-items/{id}/change-state/:
+    put:
+      operationId: invoices_sale_invoice_items_change_state_update_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_sale_invoice_items_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceItemStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          description: ''
+  /invoices/sale-invoice-items/{id}/destroy/:
+    delete:
+      operationId: invoices_sale_invoice_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /invoices/sale-invoice-items/change-state/:
+    put:
+      operationId: invoices_sale_invoice_items_change_state_update
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemStateUpdate'
+          description: ''
+  /invoices/sale-invoice-items/create/:
+    post:
+      operationId: invoices_sale_invoice_items_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceItemCreate'
+          description: ''
+  /invoices/sale-invoices/:
+    get:
+      operationId: invoices_sale_invoices_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSaleInvoiceReadList'
+          description: ''
+  /invoices/sale-invoices/{id}/:
+    get:
+      operationId: invoices_sale_invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceRead'
+          description: ''
+  /invoices/sale-invoices/{id}/change-state/:
+    put:
+      operationId: invoices_sale_invoices_change_state_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_sale_invoices_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleInvoiceStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceStateUpdate'
+          description: ''
+  /invoices/sale-invoices/{id}/download/:
+    get:
+      operationId: invoices_sale_invoices_download_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                $ref: '#/components/schemas/SaleInvoicePDF'
+          description: ''
+  /invoices/sale-invoices/create/:
+    post:
+      operationId: invoices_sale_invoices_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleInvoiceCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleInvoiceCreate'
+          description: ''
+  /invoices/sale-return-invoice-items/:
+    get:
+      operationId: invoices_sale_return_invoice_items_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSaleReturnInvoiceItemReadList'
+          description: ''
+  /invoices/sale-return-invoice-items/{id}/change/:
+    put:
+      operationId: invoices_sale_return_invoice_items_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceItemUpdate'
+          description: ''
+    patch:
+      operationId: invoices_sale_return_invoice_items_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceItemUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceItemUpdate'
+          description: ''
+  /invoices/sale-return-invoice-items/{id}/destroy/:
+    delete:
+      operationId: invoices_sale_return_invoice_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /invoices/sale-return-invoice-items/create/:
+    post:
+      operationId: invoices_sale_return_invoice_items_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceItemCreate'
+          description: ''
+  /invoices/sale-return-invoices/:
+    get:
+      operationId: invoices_sale_return_invoices_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSaleReturnInvoiceReadList'
+          description: ''
+  /invoices/sale-return-invoices/{id}/:
+    get:
+      operationId: invoices_sale_return_invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceRead'
+          description: ''
+  /invoices/sale-return-invoices/{id}/change-state/:
+    put:
+      operationId: invoices_sale_return_invoices_change_state_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceStateUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceStateUpdate'
+          description: ''
+    patch:
+      operationId: invoices_sale_return_invoices_change_state_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceStateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceStateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSaleReturnInvoiceStateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceStateUpdate'
+          description: ''
+  /invoices/sale-return-invoices/create/:
+    post:
+      operationId: invoices_sale_return_invoices_create_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaleReturnInvoiceCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleReturnInvoiceCreate'
+          description: ''
+  /market/categories/list:
+    get:
+      operationId: market_categories_list_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryReadList'
+          description: ''
+  /market/companies/list:
+    get:
+      operationId: market_companies_list_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyReadList'
+          description: ''
+  /market/filters/products/category:
+    get:
+      operationId: market_filters_products_category_retrieve
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDFilter'
+          description: ''
+  /market/filters/products/company:
+    get:
+      operationId: market_filters_products_company_retrieve
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDFilter'
+          description: ''
+  /market/filters/products/letter:
+    get:
+      operationId: market_filters_products_letter_retrieve
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharFilter'
+          description: ''
+  /market/filters/products/shape:
+    get:
+      operationId: market_filters_products_shape_retrieve
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharFilter'
+          description: ''
+  /market/product-codes/:
+    get:
+      operationId: market_product_codes_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductCodeReadList'
+          description: ''
+  /market/products/:
+    get:
+      operationId: market_products_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductReadList'
+          description: ''
+  /market/products/{id}/:
+    get:
+      operationId: market_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRead'
+          description: ''
+  /market/products/{id}/change/:
+    put:
+      operationId: market_products_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - market
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          description: ''
+    patch:
+      operationId: market_products_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - market
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductCreateUpdateSerilizer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductCreateUpdateSerilizer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductCreateUpdateSerilizer'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          description: ''
+  /market/products/create/:
+    post:
+      operationId: market_products_create_create
+      tags:
+      - market
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCreateUpdateSerilizer'
+          description: ''
+  /market/products/object/{id}/product-alternatives/list:
+    get:
+      operationId: market_products_object_product_alternatives_list_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductReadList'
+          description: ''
+  /market/products/object/{id}/product-instances/list:
+    get:
+      operationId: market_products_object_product_instances_list_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductReadList'
+          description: ''
+  /market/user/product-wishlist/:
+    get:
+      operationId: market_user_product_wishlist_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - market
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPharmacyProductWishListList'
+          description: ''
+  /market/user/product-wishlist/create/:
+    post:
+      operationId: market_user_product_wishlist_create_create
+      tags:
+      - market
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PharmacyProductWishList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PharmacyProductWishList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PharmacyProductWishList'
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PharmacyProductWishList'
+          description: ''
+  /offers/max-offers/:
+    get:
+      operationId: offers_max_offers_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - offers
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOfferReadList'
+          description: ''
+  /offers/max-offers/excel/:
+    get:
+      operationId: offers_max_offers_excel_list
+      description: |-
+        Mixin which allows the override of the filename being
+        passed back to the user when the spreadsheet is downloaded.
+      parameters:
+      - in: query
+        name: id
+        schema:
+          type: string
+      - in: query
+        name: needed
+        schema:
+          type: string
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: product
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+      tags:
+      - offers
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OfferExcelReadSerialzier'
+          description: ''
+  /offers/offers/:
+    get:
+      operationId: offers_offers_list
+      parameters:
+      - in: query
+        name: id
+        schema:
+          type: string
+      - in: query
+        name: needed
+        schema:
+          type: string
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+      tags:
+      - offers
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOfferReadList'
+          description: ''
+  /offers/offers/{id}/change/:
+    put:
+      operationId: offers_offers_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OfferUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OfferUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferUpdate'
+          description: ''
+    patch:
+      operationId: offers_offers_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOfferUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOfferUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOfferUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferUpdate'
+          description: ''
+  /offers/offers/{id}/destroy/:
+    delete:
+      operationId: offers_offers_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - offers
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /offers/offers/create/:
+    post:
+      operationId: offers_offers_create_create
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferCreate'
+          description: ''
+  /offers/offers/upload/:
+    post:
+      operationId: offers_offers_upload_create
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferUploader'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OfferUploader'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OfferUploader'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferUploader'
+          description: ''
+  /offers/user/offers/:
+    get:
+      operationId: offers_user_offers_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - offers
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOfferReadList'
+          description: ''
+  /offers/user/offers/create/:
+    post:
+      operationId: offers_user_offers_create_create
+      tags:
+      - offers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserOfferCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserOfferCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserOfferCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserOfferCreate'
+          description: ''
+  /profiles/areas/:
+    get:
+      operationId: profiles_areas_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAreaReadList'
+          description: ''
+  /profiles/cities/:
+    get:
+      operationId: profiles_cities_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCityReadList'
+          description: ''
+  /profiles/complaints/:
+    get:
+      operationId: profiles_complaints_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComplaintReadList'
+          description: ''
+  /profiles/complaints/create/:
+    post:
+      operationId: profiles_complaints_create_create
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplaintCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ComplaintCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ComplaintCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplaintCreate'
+          description: ''
+  /profiles/countries/:
+    get:
+      operationId: profiles_countries_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCountryReadList'
+          description: ''
+  /profiles/payment-periods/:
+    get:
+      operationId: profiles_payment_periods_list
+      parameters:
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: p
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: ps
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentPeriodReadList'
+          description: ''
+  /profiles/user-profile/:
+    get:
+      operationId: profiles_user_profile_retrieve
+      tags:
+      - profiles
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /profiles/user-profiles/{id}/change/:
+    put:
+      operationId: profiles_user_profiles_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileCreateUpdate'
+          description: ''
+    patch:
+      operationId: profiles_user_profiles_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileCreateUpdate'
+          description: ''
+  /profiles/user-profiles/create/:
+    post:
+      operationId: profiles_user_profiles_create_create
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileCreateUpdate'
+          description: ''
+  /push-notifications/devices/fcm/register/:
+    post:
+      operationId: push_notifications_devices_fcm_register_create
+      tags:
+      - push-notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GCMDevice'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCMDevice'
+          description: ''
+  /push-notifications/devices/fcm/unregister/:
+    delete:
+      operationId: push_notifications_devices_fcm_unregister_destroy
+      tags:
+      - push-notifications
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /shop/carts/{id}/:
+    get:
+      operationId: shop_carts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - shop
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartRead'
+          description: ''
+  /shop/user/cart/:
+    get:
+      operationId: shop_user_cart_retrieve
+      tags:
+      - shop
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartRead'
+          description: ''
+  /shop/user/cart-items/{id}/change/:
+    put:
+      operationId: shop_user_cart_items_change_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemUpdate'
+          description: ''
+    patch:
+      operationId: shop_user_cart_items_change_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemUpdate'
+          description: ''
+  /shop/user/cart-items/{id}/destroy/:
+    delete:
+      operationId: shop_user_cart_items_destroy_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - shop
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /shop/user/cart-items/create/:
+    post:
+      operationId: shop_user_cart_items_create_create
+      tags:
+      - shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemCreate'
+          description: ''
+  /shop/user/cart/checkout/:
+    post:
+      operationId: shop_user_cart_checkout_create
+      tags:
+      - shop
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    AccountRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          nullable: true
+        remaining_credit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          nullable: true
+        transactions_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - id
+      - transactions_url
+    AccountTransactionRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/AccountTransactionReadTypeEnum'
+        type_label:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        at:
+          type: string
+          format: date-time
+        ct:
+          type: string
+          readOnly: true
+        object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - at
+      - ct
+      - id
+      - timestamp
+      - type
+      - type_label
+    AccountTransactionReadTypeEnum:
+      enum:
+      - ib
+      - pi
+      - si
+      - pr
+      - sr
+      - pp
+      - sp
+      - f
+      type: string
+      description: |-
+        * `ib` - Initial balance
+        * `pi` - Purchase Invoice
+        * `si` - Sale Invoice
+        * `pr` - Purchase Return
+        * `sr` - Sale Return
+        * `pp` - Purchase Payment
+        * `sp` - Sale Payment
+        * `f` - Refund
+    AccountUpdate:
+      type: object
+      properties:
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          nullable: true
+    AdvertismentRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          nullable: true
+        redirect_type:
+          $ref: '#/components/schemas/RedirectTypeEnum'
+        content_type:
+          type: string
+          readOnly: true
+        object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        external_url:
+          type: string
+          format: uri
+          maxLength: 200
+      required:
+      - content_type
+      - id
+    AreaRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - name
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+      required:
+      - password
+      - token
+      - username
+    CartItemCreate:
+      type: object
+      properties:
+        offer:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - offer
+      - quantity
+    CartItemSubRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        offer:
+          type: integer
+          nullable: true
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        sold_out:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - discount_percentage
+      - id
+      - price
+      - product
+      - quantity
+      - sub_total
+    CartItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - quantity
+      - sub_total
+    CartRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+        items_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemSubRead'
+          readOnly: true
+      required:
+      - id
+      - items
+      - user
+    CategoryEnum:
+      enum:
+      - none
+      - a
+      - b
+      - c
+      - d
+      type: string
+      description: |-
+        * `none` - Unassigned
+        * `a` - A
+        * `b` - B
+        * `c` - C
+        * `d` - D
+    CategoryRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        e_name:
+          type: string
+          nullable: true
+          maxLength: 50
+        image:
+          type: string
+          format: uri
+          nullable: true
+        products_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - id
+      - name
+      - products_url
+    CharFilter:
+      type: object
+      properties:
+        filter_value:
+          type: string
+        filter_text:
+          type: string
+      required:
+      - filter_text
+      - filter_value
+    CityRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        country:
+          $ref: '#/components/schemas/CountryRead'
+      required:
+      - country
+      - id
+      - name
+    CloudMessageTypeEnum:
+      enum:
+      - FCM
+      - GCM
+      type: string
+      description: |-
+        * `FCM` - Firebase Cloud Message
+        * `GCM` - Google Cloud Message
+    CompanyRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        e_name:
+          type: string
+          maxLength: 50
+        image:
+          type: string
+          format: uri
+          nullable: true
+        products_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - id
+      - name
+      - products_url
+    ComplaintCreate:
+      type: object
+      properties:
+        subject:
+          type: string
+          maxLength: 255
+        body:
+          type: string
+          maxLength: 400
+      required:
+      - body
+      - subject
+    ComplaintRead:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSubRead'
+        subject:
+          type: string
+          maxLength: 255
+        body:
+          type: string
+          maxLength: 400
+        mark_as_solved:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - subject
+      - user
+    CountryRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - name
+    GCMDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          nullable: true
+          maxLength: 255
+        registration_id:
+          type: string
+        device_id:
+          type: integer
+          nullable: true
+          description: 'ANDROID_ID / TelephonyManager.getDeviceId() (e.g: 0x01)'
+        active:
+          type: boolean
+          title: Is active
+          description: Inactive devices will not be sent notifications
+        date_created:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Creation date
+        cloud_message_type:
+          allOf:
+          - $ref: '#/components/schemas/CloudMessageTypeEnum'
+          description: |-
+            You should choose FCM, GCM is deprecated
+
+            * `FCM` - Firebase Cloud Message
+            * `GCM` - Google Cloud Message
+        application_id:
+          type: string
+          nullable: true
+          description: Opaque application identity, should be filled in for multiple
+            key/certificate access
+          maxLength: 64
+      required:
+      - date_created
+      - registration_id
+    IDFilter:
+      type: object
+      properties:
+        filter_id:
+          type: string
+        filter_text:
+          type: string
+      required:
+      - filter_id
+      - filter_text
+    InventoryCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeC4aEnum'
+      required:
+      - name
+      - type
+    InventoryItemCreate:
+      type: object
+      properties:
+        inventory:
+          type: integer
+        product:
+          type: integer
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - inventory
+      - product
+      - purchase_discount_percentage
+      - quantity
+      - remaining_quantity
+      - selling_discount_percentage
+    InventoryItemRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        inventory:
+          $ref: '#/components/schemas/InventoryRead'
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        purchase_sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        selling_sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - id
+      - inventory
+      - product
+      - purchase_discount_percentage
+      - purchase_price
+      - purchase_sub_total
+      - quantity
+      - remaining_quantity
+      - selling_discount_percentage
+      - selling_price
+      - selling_sub_total
+    InventoryItemTransfer:
+      type: object
+      properties:
+        inventory:
+          type: integer
+      required:
+      - inventory
+    InventoryItemUpdate:
+      type: object
+      properties:
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - purchase_discount_percentage
+      - quantity
+      - remaining_quantity
+      - selling_discount_percentage
+    InventoryRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeC4aEnum'
+        type_label:
+          type: string
+          readOnly: true
+        total_items:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        total_selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        items_url:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - id
+      - items_url
+      - name
+      - total_items
+      - total_purchase_price
+      - total_quantity
+      - total_selling_price
+      - type
+      - type_label
+    InventoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeC4aEnum'
+        type_label:
+          type: string
+          readOnly: true
+      required:
+      - name
+      - type
+      - type_label
+    MethodEnum:
+      enum:
+      - ip
+      - c
+      - w
+      - p
+      type: string
+      description: |-
+        * `ip` - Instapay
+        * `c` - Cash
+        * `w` - Wallet
+        * `p` - Products
+    OfferCreate:
+      type: object
+      properties:
+        product_code:
+          type: integer
+          nullable: true
+        available_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        min_purchase:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_amount_per_invoice:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - available_amount
+      - product_code
+      - purchase_discount_percentage
+    OfferExcelReadSerialzier:
+      type: object
+      properties:
+        product_seller_code:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        public_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - product_name
+      - product_seller_code
+      - public_price
+      - selling_discount_percentage
+    OfferRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_code:
+          type: integer
+          nullable: true
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        user:
+          $ref: '#/components/schemas/UserRead'
+        operating_number:
+          type: string
+          maxLength: 255
+        available_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        max_amount_per_invoice:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        min_purchase:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        is_max:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        actual_discount_precentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          readOnly: true
+        actual_offer_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - actual_discount_precentage
+      - actual_offer_price
+      - available_amount
+      - created_at
+      - id
+      - product
+      - purchase_discount_percentage
+      - purchase_price
+      - remaining_amount
+      - selling_discount_percentage
+      - selling_price
+      - user
+    OfferUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_code:
+          allOf:
+          - $ref: '#/components/schemas/ProductCodeRead'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRead'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserRead'
+          readOnly: true
+        operating_number:
+          type: string
+          maxLength: 255
+        available_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        max_amount_per_invoice:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        min_purchase:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        is_max:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - available_amount
+      - created_at
+      - id
+      - product
+      - product_code
+      - purchase_discount_percentage
+      - purchase_price
+      - remaining_amount
+      - selling_discount_percentage
+      - selling_price
+      - user
+    OfferUploader:
+      type: object
+      properties:
+        file:
+          type: string
+          format: uri
+          pattern: (?:xlsx|xls)$
+        user:
+          type: integer
+          writeOnly: true
+      required:
+      - file
+      - user
+    PaginatedAccountTransactionReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountTransactionRead'
+    PaginatedAreaReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaRead'
+    PaginatedCategoryReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryRead'
+    PaginatedCityReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CityRead'
+    PaginatedCompanyReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyRead'
+    PaginatedComplaintReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplaintRead'
+    PaginatedCountryReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountryRead'
+    PaginatedInventoryItemReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemRead'
+    PaginatedInventoryReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryRead'
+    PaginatedOfferReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferRead'
+    PaginatedPaymentPeriodReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentPeriodRead'
+    PaginatedPharmacyProductWishListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PharmacyProductWishList'
+    PaginatedProductCodeReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCodeRead'
+    PaginatedProductReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductRead'
+    PaginatedPurchaseInvoiceItemReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseInvoiceItemRead'
+    PaginatedPurchaseInvoiceReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseInvoiceRead'
+    PaginatedPurchasePaymentReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchasePaymentRead'
+    PaginatedPurchaseReturnInvoiceItemReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnInvoiceItemRead'
+    PaginatedPurchaseReturnInvoiceReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnInvoiceRead'
+    PaginatedSafeTransactionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafeTransaction'
+    PaginatedSaleInvoiceItemReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleInvoiceItemRead'
+    PaginatedSaleInvoiceReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleInvoiceRead'
+    PaginatedSalePaymentReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalePaymentRead'
+    PaginatedSaleReturnInvoiceItemReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleReturnInvoiceItemRead'
+    PaginatedSaleReturnInvoiceReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleReturnInvoiceRead'
+    PaginatedUserFullReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserFullRead'
+    PaginatedUserReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?p=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRead'
+    PatchedAccountUpdate:
+      type: object
+      properties:
+        credit_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          nullable: true
+    PatchedCartItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+    PatchedInventoryItemTransfer:
+      type: object
+      properties:
+        inventory:
+          type: integer
+    PatchedInventoryItemUpdate:
+      type: object
+      properties:
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    PatchedInventoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeC4aEnum'
+        type_label:
+          type: string
+          readOnly: true
+    PatchedOfferUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_code:
+          allOf:
+          - $ref: '#/components/schemas/ProductCodeRead'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRead'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserRead'
+          readOnly: true
+        operating_number:
+          type: string
+          maxLength: 255
+        available_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        max_amount_per_invoice:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        min_purchase:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        is_max:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedProductCreateUpdateSerilizer:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 200
+        image:
+          type: string
+          format: uri
+          nullable: true
+        public_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        company:
+          type: integer
+        category:
+          type: integer
+        effective_material:
+          type: string
+          maxLength: 300
+        shape:
+          $ref: '#/components/schemas/ShapeEnum'
+        needed:
+          type: boolean
+        is_illegal:
+          type: boolean
+        fridge:
+          type: boolean
+    PatchedPurchaseInvoiceItemStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        remove_offer:
+          type: boolean
+          writeOnly: true
+        status_label:
+          type: string
+          readOnly: true
+    PatchedPurchaseInvoiceStateUpdate:
+      type: object
+      properties:
+        supplier_invoice_number:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/Status09bEnum'
+        status_label:
+          type: string
+          readOnly: true
+    PatchedPurchasePaymentUpdate:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+    PatchedPurchaseReturnInvoiceItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+    PatchedPurchaseReturnInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9daEnum'
+        status_label:
+          type: string
+          readOnly: true
+    PatchedSaleInvoiceItemStateUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        remove_offer:
+          type: boolean
+          writeOnly: true
+        status_label:
+          type: string
+          readOnly: true
+    PatchedSaleInvoiceItemUpdate:
+      type: object
+      properties:
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+    PatchedSaleInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status8f8Enum'
+        status_label:
+          type: string
+          readOnly: true
+    PatchedSalePaymentUpdate:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+    PatchedSaleReturnInvoiceItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+    PatchedSaleReturnInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9daEnum'
+        status_label:
+          type: string
+          readOnly: true
+    PatchedUserProfileCreateUpdate:
+      type: object
+      properties:
+        data_entry:
+          type: integer
+          nullable: true
+        sales:
+          type: integer
+          nullable: true
+        manager:
+          type: integer
+          nullable: true
+        area_manager:
+          type: integer
+          nullable: true
+        delivery:
+          type: integer
+          nullable: true
+        city:
+          type: integer
+          nullable: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        license:
+          type: string
+          format: uri
+          nullable: true
+        address:
+          type: string
+          maxLength: 200
+        remarks:
+          type: string
+        latest_invoice_date:
+          type: string
+          format: date-time
+          nullable: true
+        payment_period:
+          type: integer
+          nullable: true
+        profit_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        order_by_phone:
+          type: boolean
+        company:
+          type: boolean
+        key_person:
+          type: string
+          maxLength: 255
+        key_person_phone:
+          type: string
+          maxLength: 255
+    PaymentPeriodRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        period_in_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        addition_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+      required:
+      - id
+      - name
+      - period_in_days
+    PaymentPeriodSubRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        period_in_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        addition_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+      required:
+      - id
+      - name
+      - period_in_days
+    PharmacyCreate:
+      type: object
+      properties:
+        username:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 50
+        area:
+          type: integer
+          nullable: true
+        password:
+          type: string
+          writeOnly: true
+        confirm_password:
+          type: string
+          writeOnly: true
+      required:
+      - confirm_password
+      - name
+      - password
+      - username
+    PharmacyProductWishList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRead'
+          readOnly: true
+        product_id:
+          type: integer
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product
+    ProductCodeRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        user:
+          $ref: '#/components/schemas/UserRead'
+        code:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - code
+      - id
+      - product
+      - user
+    ProductCreateUpdateSerilizer:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 200
+        image:
+          type: string
+          format: uri
+          nullable: true
+        public_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        company:
+          type: integer
+        category:
+          type: integer
+        effective_material:
+          type: string
+          maxLength: 300
+        shape:
+          $ref: '#/components/schemas/ShapeEnum'
+        needed:
+          type: boolean
+        is_illegal:
+          type: boolean
+        fridge:
+          type: boolean
+      required:
+      - category
+      - company
+      - e_name
+      - name
+      - public_price
+      - shape
+    ProductRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        public_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+      required:
+      - id
+      - name
+      - public_price
+    PurchaseInvoiceCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseInvoiceItemSubCreate'
+      required:
+      - items
+      - user
+    PurchaseInvoiceItemCreate:
+      type: object
+      properties:
+        invoice:
+          type: integer
+        offer:
+          type: integer
+          nullable: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - invoice
+      - quantity
+    PurchaseInvoiceItemRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+        invoice_obj:
+          $ref: '#/components/schemas/PurchaseInvoiceRead'
+        offer:
+          type: integer
+          nullable: true
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        status_label:
+          type: string
+          readOnly: true
+        sale_invoice_item:
+          $ref: '#/components/schemas/SaleInvoiceItemSubRead'
+      required:
+      - id
+      - invoice
+      - invoice_obj
+      - product
+      - purchase_discount_percentage
+      - purchase_price
+      - quantity
+      - remaining_quantity
+      - sale_invoice_item
+      - selling_discount_percentage
+      - selling_price
+      - status_label
+      - sub_total
+    PurchaseInvoiceItemStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        remove_offer:
+          type: boolean
+          writeOnly: true
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - status
+      - status_label
+    PurchaseInvoiceItemSubCreate:
+      type: object
+      properties:
+        offer:
+          type: integer
+          writeOnly: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - offer
+      - quantity
+    PurchaseInvoiceRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/UserRead'
+        supplier_invoice_number:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/Status09bEnum'
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - status_label
+      - user
+    PurchaseInvoiceStateUpdate:
+      type: object
+      properties:
+        supplier_invoice_number:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/Status09bEnum'
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - status
+      - status_label
+    PurchasePaymentCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - at
+      - method
+      - user
+    PurchasePaymentRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        method_label:
+          type: string
+          readOnly: true
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - at
+      - id
+      - method
+      - method_label
+      - timestamp
+    PurchasePaymentUpdate:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - at
+      - method
+    PurchaseReturnInvoiceCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnInvoiceItemSubCreate'
+      required:
+      - items
+      - user
+    PurchaseReturnInvoiceItemCreate:
+      type: object
+      properties:
+        invoice:
+          type: integer
+        purchase_invoice_item:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - invoice
+      - purchase_invoice_item
+      - quantity
+    PurchaseReturnInvoiceItemRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice_obj:
+          $ref: '#/components/schemas/PurchaseReturnInvoiceRead'
+        purchase_invoice_item:
+          $ref: '#/components/schemas/PurchaseInvoiceItemRead'
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - id
+      - invoice_obj
+      - purchase_invoice_item
+      - quantity
+      - sub_total
+    PurchaseReturnInvoiceItemSubCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        purchase_invoice_item:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - purchase_invoice_item
+      - quantity
+    PurchaseReturnInvoiceItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - quantity
+    PurchaseReturnInvoiceRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/UserRead'
+        status:
+          $ref: '#/components/schemas/Status8f8Enum'
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - status_label
+      - user
+    PurchaseReturnInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9daEnum'
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - status
+      - status_label
+    RedirectTypeEnum:
+      enum:
+      - i
+      - e
+      type: string
+      description: |-
+        * `i` - Internal
+        * `e` - External
+    RoleEnum:
+      enum:
+      - ADMIN
+      - PHARMACY
+      - DELIVERY
+      - STORE
+      - MANAGER
+      - SALES
+      - DATA_ENTRY
+      - AREA_MANAGER
+      type: string
+      description: |-
+        * `ADMIN` - Admin
+        * `PHARMACY` - Pharmacy
+        * `DELIVERY` - Delivery
+        * `STORE` - Store
+        * `MANAGER` - Manager
+        * `SALES` - Sales
+        * `DATA_ENTRY` - Data entry
+        * `AREA_MANAGER` - Area manager
+    Safe:
+      type: object
+      properties:
+        safe_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          readOnly: true
+        credit_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          readOnly: true
+        debt_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          readOnly: true
+        inventory_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - credit_total_amount
+      - debt_total_amount
+      - inventory_total_amount
+      - safe_total_amount
+      - total_amount
+    SafeTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/SafeTransactionTypeEnum'
+        type_label:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - timestamp
+      - type
+      - type_label
+    SafeTransactionTypeEnum:
+      enum:
+      - d
+      - w
+      type: string
+      description: |-
+        * `d` - Deposit
+        * `w` - Withdrawal
+    SaleInvoiceCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleInvoiceItemSubCreate'
+      required:
+      - items
+      - user
+    SaleInvoiceItemCreate:
+      type: object
+      properties:
+        invoice:
+          type: integer
+        offer:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - invoice
+      - offer
+      - quantity
+    SaleInvoiceItemRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+        invoice_obj:
+          $ref: '#/components/schemas/SaleInvoiceRead'
+        product:
+          $ref: '#/components/schemas/ProductRead'
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        offer:
+          type: integer
+          nullable: true
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        purchase_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        selling_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        remaining_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - invoice
+      - invoice_obj
+      - product
+      - purchase_discount_percentage
+      - purchase_price
+      - quantity
+      - remaining_quantity
+      - selling_discount_percentage
+      - selling_price
+      - status_label
+      - sub_total
+    SaleInvoiceItemStateUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/Status9a5Enum'
+        remove_offer:
+          type: boolean
+          writeOnly: true
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - status
+      - status_label
+    SaleInvoiceItemSubCreate:
+      type: object
+      properties:
+        offer:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - offer
+      - quantity
+    SaleInvoiceItemSubRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+      required:
+      - id
+      - invoice
+    SaleInvoiceItemUpdate:
+      type: object
+      properties:
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+        operating_number:
+          type: string
+          maxLength: 255
+        selling_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - quantity
+      - selling_discount_percentage
+    SaleInvoicePDF:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        seller_name:
+          type: string
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        user_mobile_number:
+          type: string
+          readOnly: true
+        delivery_name:
+          type: string
+          readOnly: true
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        prev_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        items_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        average_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          readOnly: true
+        items:
+          type: string
+          readOnly: true
+        total_public_price:
+          type: string
+          readOnly: true
+      required:
+      - average_discount_percentage
+      - balance
+      - created_at
+      - delivery_name
+      - id
+      - items
+      - items_count
+      - prev_balance
+      - seller_name
+      - total_price
+      - total_public_price
+      - total_quantity
+      - user_mobile_number
+      - user_name
+    SaleInvoiceRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/UserWithProfileRead'
+        status:
+          $ref: '#/components/schemas/Status8f8Enum'
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - status_label
+      - user
+    SaleInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status8f8Enum'
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - status
+      - status_label
+    SalePaymentCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - at
+      - method
+      - user
+    SalePaymentRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        method_label:
+          type: string
+          readOnly: true
+        at:
+          type: string
+          format: date-time
+        remarks:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - at
+      - id
+      - method
+      - method_label
+      - timestamp
+    SalePaymentUpdate:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,2})?$
+        remarks:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - amount
+      - at
+      - method
+    SaleReturnInvoiceCreate:
+      type: object
+      properties:
+        user:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleReturnInvoiceItemSubCreate'
+      required:
+      - items
+      - user
+    SaleReturnInvoiceItemCreate:
+      type: object
+      properties:
+        invoice:
+          type: integer
+        sale_invoice_item:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - invoice
+      - quantity
+      - sale_invoice_item
+    SaleReturnInvoiceItemRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice_obj:
+          $ref: '#/components/schemas/SaleReturnInvoiceRead'
+        sale_invoice_item:
+          $ref: '#/components/schemas/SaleInvoiceItemRead'
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        sub_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - id
+      - invoice_obj
+      - quantity
+      - sale_invoice_item
+      - sub_total
+    SaleReturnInvoiceItemSubCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sale_invoice_item:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - quantity
+      - sale_invoice_item
+    SaleReturnInvoiceItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+      required:
+      - quantity
+    SaleReturnInvoiceRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/UserRead'
+        status:
+          $ref: '#/components/schemas/Status8f8Enum'
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - status_label
+      - user
+    SaleReturnInvoiceStateUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status9daEnum'
+        status_label:
+          type: string
+          readOnly: true
+      required:
+      - status
+      - status_label
+    ShapeEnum:
+      enum:
+      - افلام
+      - شراب
+      - اسبراي
+      - استحلاب
+      - اقراص
+      - اقماع
+      - اكياس
+      - امبولات
+      - برطمان
+      - بلسم
+      - بودرة
+      - جل
+      - حبيبات فوار
+      - زيت
+      - زيت شعر
+      - سرنجة معبأه
+      - سيرم
+      - شامبو
+      - صابون
+      - غسول فم
+      - غسول مهبلي
+      - غسول وجه
+      - فوم
+      - فيال
+      - قطرة أذن
+      - قطرة للعين
+      - قلم معبأ
+      - قطعة
+      - كبسولات
+      - كريم
+      - لوشن
+      - محلول
+      - محلول استنشاق
+      - مرهم
+      - مرهم للعين
+      - مس
+      - معلق
+      - نقط عين
+      - نقط فم
+      type: string
+      description: |-
+        * `افلام` - افلام
+        * `شراب` - شراب
+        * `اسبراي` - اسبراي
+        * `استحلاب` - استحلاب
+        * `اقراص` - اقراص
+        * `اقماع` - اقماع
+        * `اكياس` - اكياس
+        * `امبولات` - امبولات
+        * `برطمان` - برطمان
+        * `بلسم` - بلسم
+        * `بودرة` - بودرة
+        * `جل` - جل
+        * `حبيبات فوار` - حبيبات فوار
+        * `زيت` - زيت
+        * `زيت شعر` - زيت شعر
+        * `سرنجة معبأه` - سرنجة معبأه
+        * `سيرم` - سيرم
+        * `شامبو` - شامبو
+        * `صابون` - صابون
+        * `غسول فم` - غسول فم
+        * `غسول مهبلي` - غسول مهبلي
+        * `غسول وجه` - غسول وجه
+        * `فوم` - فوم
+        * `فيال` - فيال
+        * `قطرة أذن` - قطرة أذن
+        * `قطرة للعين` - قطرة للعين
+        * `قلم معبأ` - قلم معبأ
+        * `قطعة` - قطعة
+        * `كبسولات` - كبسولات
+        * `كريم` - كريم
+        * `لوشن` - لوشن
+        * `محلول` - محلول
+        * `محلول استنشاق` - محلول استنشاق
+        * `مرهم` - مرهم
+        * `مرهم للعين` - مرهم للعين
+        * `مس` - مس
+        * `معلق` - معلق
+        * `نقط عين` - نقط عين
+        * `نقط فم` - نقط فم
+    Status09bEnum:
+      enum:
+      - placed
+      - locked
+      - closed
+      type: string
+      description: |-
+        * `placed` - Placed
+        * `locked` - Locked
+        * `closed` - Closed
+    Status8f8Enum:
+      enum:
+      - placed
+      - closed
+      type: string
+      description: |-
+        * `placed` - Placed
+        * `closed` - Closed
+    Status9a5Enum:
+      enum:
+      - placed
+      - accepted
+      - rejected
+      - received
+      - not_received
+      type: string
+      description: |-
+        * `placed` - Placed
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `received` - Received
+        * `not_received` - Not Received
+    Status9daEnum:
+      enum:
+      - closed
+      type: string
+      description: '* `closed` - closed'
+    TypeC4aEnum:
+      enum:
+      - main
+      - secondary
+      type: string
+      description: |-
+        * `main` - Main
+        * `secondary` - Secondary
+    UserFullRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 50
+        area:
+          type: integer
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        role_label:
+          type: string
+          readOnly: true
+        is_superuser:
+          type: boolean
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        profile:
+          $ref: '#/components/schemas/UserProfileRead'
+        account:
+          $ref: '#/components/schemas/AccountRead'
+      required:
+      - account
+      - id
+      - name
+      - profile
+      - role
+      - role_label
+      - username
+    UserOfferCreate:
+      type: object
+      properties:
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductRead'
+          readOnly: true
+        product_id:
+          type: integer
+          writeOnly: true
+        available_amount:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        purchase_discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        operating_number:
+          type: string
+          maxLength: 255
+        product_expiry_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - available_amount
+      - product
+      - product_id
+      - purchase_discount_percentage
+    UserProfileCreateUpdate:
+      type: object
+      properties:
+        data_entry:
+          type: integer
+          nullable: true
+        sales:
+          type: integer
+          nullable: true
+        manager:
+          type: integer
+          nullable: true
+        area_manager:
+          type: integer
+          nullable: true
+        delivery:
+          type: integer
+          nullable: true
+        city:
+          type: integer
+          nullable: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        license:
+          type: string
+          format: uri
+          nullable: true
+        address:
+          type: string
+          maxLength: 200
+        remarks:
+          type: string
+        latest_invoice_date:
+          type: string
+          format: date-time
+          nullable: true
+        payment_period:
+          type: integer
+          nullable: true
+        profit_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        order_by_phone:
+          type: boolean
+        company:
+          type: boolean
+        key_person:
+          type: string
+          maxLength: 255
+        key_person_phone:
+          type: string
+          maxLength: 255
+    UserProfileRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        data_entry:
+          $ref: '#/components/schemas/UserSubRead'
+        sales:
+          $ref: '#/components/schemas/UserSubRead'
+        manager:
+          $ref: '#/components/schemas/UserSubRead'
+        area_manager:
+          $ref: '#/components/schemas/UserSubRead'
+        delivery:
+          $ref: '#/components/schemas/UserSubRead'
+        city:
+          $ref: '#/components/schemas/CityRead'
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        category_label:
+          type: string
+          readOnly: true
+        license:
+          type: string
+          format: uri
+          nullable: true
+        address:
+          type: string
+          maxLength: 200
+        remarks:
+          type: string
+        latest_invoice_date:
+          type: string
+          format: date-time
+          nullable: true
+        payment_period:
+          $ref: '#/components/schemas/PaymentPeriodRead'
+        profit_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        order_by_phone:
+          type: boolean
+        company:
+          type: boolean
+        key_person:
+          type: string
+          maxLength: 255
+        key_person_phone:
+          type: string
+          maxLength: 255
+      required:
+      - area_manager
+      - category_label
+      - city
+      - data_entry
+      - delivery
+      - id
+      - manager
+      - payment_period
+      - sales
+    UserProfileSubRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        payment_period:
+          $ref: '#/components/schemas/PaymentPeriodSubRead'
+      required:
+      - id
+      - payment_period
+    UserRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 50
+      required:
+      - id
+      - name
+      - username
+    UserSubRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 50
+        username:
+          type: string
+          maxLength: 128
+      required:
+      - id
+      - name
+    UserWithProfileRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        e_name:
+          type: string
+          maxLength: 50
+        area:
+          type: integer
+          nullable: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        role_label:
+          type: string
+          readOnly: true
+        is_superuser:
+          type: boolean
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        profile:
+          $ref: '#/components/schemas/UserProfileSubRead'
+      required:
+      - id
+      - name
+      - profile
+      - role
+      - role_label
+      - username
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

@@ -1,0 +1,122 @@
+{% extends "base.html" %} {% load static %} {% block dailyOrder %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        Resell
+      </div>
+      <div class="card-body table-striped">
+        <table
+          id="testTbl"
+          data-toggle="table"
+          data-pagination="true"
+          data-search="true"
+          data-show-columns="true"
+          data-show-toggle="true"
+          data-show-columns-search="true"
+          data-show-pagination-switch="true"
+          data-show-fullscreen="true"
+          data-searchable="true"
+          data-show-print="true"
+          data-print-as-filtered-and-sorted-on-ui="true"
+          data-mobile-responsive="true"
+          data-key-events="true"
+          data-show-search-clear-button="true"
+          data-filter-control="true"
+          data-show-export="true"
+          data-click-to-select="true"
+          data-unique-id="order"
+        >
+          <thead>
+            <tr>
+              <th
+                data-field="state"
+                data-checkbox="true"
+                data-visible="false"
+              ></th>
+              <th
+                data-field="order"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                رقم الطلب
+              </th>
+              <th
+                data-field="product"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                المخزن
+              </th>
+              <th
+                data-field="cart"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                Cart
+              </th>
+              <th
+                data-field="pharmacy"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                الصيدلية
+              </th>
+              <th
+                data-field="manager"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                المدير
+              </th>
+              <th
+                data-field="quantity"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                الكمية
+              </th>
+              <th
+                data-field="is_accept"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                is_accept
+              </th>
+              <th
+                data-field="is_received"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                is_received
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td></td>
+              <td>{{order.order.id}}</td>
+              <td>{{order.product.store.name}}</td>
+              <td>{{order.cart.id}}</td>
+              <td>{{order.pharmacy.name}}</td>
+              <td>{{order.manager.name}}</td>
+              <td>{{order.quantity}}</td>
+              <td>
+                {% if order.is_accept %}
+                <button class="btn btn-success">Accepted</button>
+                {% else %}
+                <button class="btn btn-success m-auto">Accept</button>
+                {% endif %}
+              </td>
+              <td>{{order.is_received}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

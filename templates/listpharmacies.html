@@ -1,0 +1,115 @@
+{% extends "base.html" %} {% load static %} {% block dailyOrder %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        List Pharmacies
+      </div>
+      <div class="card-body table-striped">
+        <table
+          id="testTbl"
+          data-toggle="table"
+          data-pagination="true"
+          data-search="true"
+          data-show-columns="true"
+          data-show-toggle="true"
+          data-show-columns-search="true"
+          data-show-pagination-switch="true"
+          data-show-fullscreen="true"
+          data-searchable="true"
+          data-show-print="true"
+          data-print-as-filtered-and-sorted-on-ui="true"
+          data-mobile-responsive="true"
+          data-key-events="true"
+          data-show-search-clear-button="true"
+          data-filter-control="true"
+          data-show-export="true"
+          data-click-to-select="true"
+          data-unique-id="order"
+        >
+          <thead>
+            <tr>
+              <th
+                data-field="state"
+                data-checkbox="true"
+                data-visible="false"
+              ></th>
+              <th
+                data-field="user"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+             اسم الصيدلية
+              </th>
+              <th
+                data-field="country"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                المركز
+              </th>
+              <th
+                data-field="city"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                القرية
+              </th>
+              <th
+                data-field="address"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                العنوان
+              </th>
+              <th
+                data-field="orderbyphone"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                Telesales
+              </th>
+              <th
+                data-field="delivery"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                عامل التوصيل
+              </th>
+              <th
+                data-field="sales"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                مسول المبيعات
+              </th>
+              <th
+              data-field="note"
+              data-sortable="true"
+              data-filter-control="input"
+            >
+             notes
+            </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td></td>
+              <td>{{order.user}}</td>
+              <td>{{order.country.name}}</td>
+              <td>{{order.city.name}}</td>
+              <td>{{order.address}}</td>
+              <td>{{order.orderbyphone}}</td>
+              <td>{{order.delivery.name}}</td>
+              <td>{{order.note}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+from django.urls import path
+from finance import views
+
+app_name = "finance"
+
+urlpatterns = [
+    path(
+        "accounts/<int:pk>/change/",
+        views.AccountUpdateAPIView.as_view(),
+        name="accounts-update-view",
+    ),
+    path(
+        "account-transactions/",
+        views.AccountTransactionListAPIView.as_view(),
+        name="account-transactions-list-view",
+    ),
+    path(
+        "purchase-payments/",
+        views.PurchasePaymentListAPIView.as_view(),
+        name="purchase-payments-list-view",
+    ),
+    path(
+        "purchase-payments/create/",
+        views.PurchasePaymentCreateView.as_view(),
+        name="purchase-payments-create-view",
+    ),
+    path(
+        "purchase-payments/<int:pk>/change/",
+        views.PurchasePaymentUpdateAPIView.as_view(),
+        name="purchase-payments-update-view",
+    ),
+    path(
+        "purchase-payments/<int:pk>/destroy/",
+        views.PurchasePaymentDestroyAPIView.as_view(),
+        name="purchase-payments-delete-view",
+    ),
+    path(
+        "sale-payments/",
+        views.SalePaymentListAPIView.as_view(),
+        name="sale-payments-list-view",
+    ),
+    path(
+        "sale-payments/create/",
+        views.SalePaymentCreateView.as_view(),
+        name="sale-payments-create-view",
+    ),
+    path(
+        "sale-payments/<int:pk>/change/",
+        views.SalePaymentUpdateAPIView.as_view(),
+        name="sale-payments-update-view",
+    ),
+    path(
+        "sale-payments/<int:pk>/destroy/",
+        views.SalePaymentDestroyAPIView.as_view(),
+        name="sale-payments-delete-view",
+    ),
+    path(
+        "safe-transactions/",
+        views.SafeTransactionListAPIView.as_view(),
+        name="safe-transactions-list-view",
+    ),
+    path(
+        "safe-transactions/create/",
+        views.SafeTransactionCreateAPIView.as_view(),
+        name="safe-transactions-create-view",
+    ),
+    path(
+        "safe/",
+        views.SafeRetrieveAPIView.as_view(),
+        name="safe-object-view",
+    ),
+]

@@ -1,0 +1,241 @@
+from decimal import Decimal
+from accounts.permissions import *
+from drf_excel.mixins import XLSXFileMixin
+from drf_excel.renderers import XLSXRenderer
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, UpdateAPIView
+from django.db import models
+from offers.filters import OfferFilter
+from offers.models import Offer
+from offers.serializers import (
+    OfferCreateSerializer,
+    OfferUpdateSerializer,
+    OfferExcelReadSerialzier,
+    OfferPDFReadSerializer,
+    OfferReadSerializer,
+    OfferUploaderSerializer,
+    UserOfferCreateSerializer,
+)
+from django.utils import timezone
+from core.utils import get_excel_body, get_excel_header, get_excel_column_header
+from core.views.mixins import PDFFileMixin
+from core.views.renderers import PDFRenderer
+from django.utils.translation import activate
+from rest_framework.response import Response
+from core.views.abstract_paginations import CustomPageNumberPagination, LargePageNumberPagination
+from rest_framework.exceptions import ValidationError
+
+from offers.utils import delete_offer
+
+
+class OffersListAPIView(ListAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferReadSerializer
+    pagination_class = CustomPageNumberPagination
+    filterset_class = OfferFilter
+    search_fields = ["^product__name", "^product__e_name"]
+    ordering_fields = [
+        "product__name",
+        "product__e_name",
+        "product__public_price",
+        "purchase_discount_percentage",
+        "purchase_price",
+        "selling_discount_percentage",
+        "selling_price",
+        "user__name",
+        "selling_price",
+        "product__needed",
+        "min_purchase",
+    ]
+
+    def get_queryset(self):
+        queryset = Offer.objects.select_related("product_code", "product", "user")
+        return queryset
+
+
+class MaxOfferListAPIView(ListAPIView):
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | PharmacyRoleAuthentication | ManagerRoleAuthentication
+    ]
+    serializer_class = OfferReadSerializer
+    pagination_class = CustomPageNumberPagination
+    filterset_class = OfferFilter
+    search_fields = ["^product__name", "^product__e_name"]
+    ordering_fields = [
+        "product__name",
+        "product__e_name",
+        "product__public_price",
+        "selling_discount_percentage",
+        "user__name",
+        "selling_price",
+        "product__needed",
+        "min_purchase",
+    ]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        actual_discount_precentage = models.F("selling_discount_percentage") - Decimal("0.00")
+        actual_offer_price = models.F("selling_price")
+
+        if user.role == Role.PHARMACY:
+            try:
+                profile = getattr(user, "profile")
+                payment_period = getattr(profile, "payment_period")
+                additional_fees_percentage = payment_period.addition_percentage
+            except Exception:
+                raise ValidationError({"detail": "Couldn't get pharmacy payment period."})
+            else:
+                actual_discount_precentage = models.F("selling_discount_percentage") - additional_fees_percentage
+                actual_offer_price = models.F("product__public_price") * (1 - (actual_discount_precentage / 100))
+
+        queryset = (
+            Offer.objects.filter(remaining_amount__gt=0, is_max=True)
+            .select_related("product_code", "product", "user")
+            .annotate(
+                actual_discount_precentage=actual_discount_precentage,
+                actual_offer_price=actual_offer_price,
+            )
+        )
+
+        return queryset
+
+
+class OfferCreateAPIView(CreateAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferCreateSerializer
+    queryset = Offer.objects.none()
+
+
+class OfferUploadAPIView(CreateAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferUploaderSerializer
+    queryset = Offer.objects.none()
+
+
+class OfferUpdateAPIView(UpdateAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferUpdateSerializer
+    queryset = Offer.objects.select_related("product_code", "product", "user").all()
+
+
+class OfferDestroyAPIView(DestroyAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferReadSerializer
+    queryset = Offer.objects.select_related("product").all()
+
+    def perform_destroy(self, instance):
+        delete_offer(instance)
+
+
+class OfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferExcelReadSerialzier
+    renderer_classes = [XLSXRenderer]
+    filterset_class = OfferFilter
+    pagination_class = None
+    search_fields = ["^product__name", "^product__e_name"]
+    ordering_fields = [
+        "id",
+        "product__name",
+        "product__public_price",
+        "discount_precentage",
+        "user__name",
+        "offer_price",
+        "product__needed",
+        "min_purchase",
+    ]
+    body = get_excel_body()
+
+    def get_header(self):
+        return get_excel_header(tab_name="Max Offers Report", header_title="Max Offers Report")
+
+    def get_column_header(self):
+        titles = ["Product code", "Product name", "Price", "Discount"]
+        return get_excel_column_header(titles=titles)
+
+    def get_filename(self, request=None, *args, **kwargs):
+        NOW = timezone.now().strftime("%d-%m-%Y-%H-%M-%S")
+        return f"Pharmasky Max offers report - {NOW}.xlsx"
+
+    def get_queryset(self):
+        queryset = (
+            Offer.objects.select_related("product_code")
+            .filter(is_max=True)
+            .annotate(
+                product_seller_code=models.F("product_code__code"),
+                product_name=models.F("product__name"),
+                seller_name=models.F("user__name"),
+                public_price=models.F("product__public_price"),
+            )
+            .values(
+                "product_seller_code",
+                "product_name",
+                "seller_name",
+                "public_price",
+                "selling_discount_percentage",
+                "created_at",
+            )
+        )
+        return queryset
+
+
+class OfferDownloadPDFAPIView(PDFFileMixin, ListAPIView):
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    renderer_classes = [PDFRenderer]
+    serializer_class = OfferPDFReadSerializer
+    template_name = "market/pdf/store_offers.html"
+    template_context = {"timestamp": timezone.now().strftime("%d-%m-%Y")}
+    search_fields = ["^product__name", "^product__e_name"]
+
+    def get_queryset(self):
+        queryset = (
+            Offer.objects.select_related("product_code")
+            .filter(is_max=True)
+            .annotate(
+                product_name=models.F("product__name"),
+                public_price=models.F("product__public_price"),
+            )
+            .values("product_name", "public_price", "selling_discount_percentage")
+        )
+        return queryset
+
+    def get_filename(self, request=None, *args, **kwargs):
+        NOW = timezone.now().strftime("%d-%m-%Y")
+        return f"Pharmasky Max offers report - {NOW}.xlsx"
+
+    def get(self, request, *args, **kwargs):
+        activate("ar")
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class UserOfferListAPIView(ListAPIView):
+    permission_classes = [PharmacyRoleAuthentication]
+    serializer_class = OfferReadSerializer
+    filterset_class = OfferFilter
+    search_fields = ["^product__name", "^product__e_name"]
+    ordering_fields = [
+        "product__name",
+        "product__e_name",
+        "product__public_price",
+        "selling_discount_percentage",
+        "selling_price",
+        "product__needed",
+        "min_purchase",
+    ]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Offer.objects.select_related("product").filter(user=user)
+        return queryset
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs.update({"exclude": ["user", "product_code"]})
+        return super().get_serializer(*args, **kwargs)
+
+
+class UserOfferCreateAPIView(CreateAPIView):
+    permission_classes = [PharmacyRoleAuthentication]
+    serializer_class = UserOfferCreateSerializer
+    queryset = Offer.objects.none()

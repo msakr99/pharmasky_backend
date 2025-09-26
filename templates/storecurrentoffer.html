@@ -1,0 +1,93 @@
+{% extends "base.html" %} {% load static %} {% block StoreOffer %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        Store Offers
+      </div>
+      <div class="card-body table-striped">
+        <table
+          id="testTbl"
+          data-toggle="table"
+          data-pagination="true"
+          data-search="true"
+          data-show-columns="true"
+          data-show-toggle="true"
+          data-show-columns-search="true"
+          data-show-pagination-switch="true"
+          data-show-fullscreen="true"
+          data-searchable="true"
+          data-show-print="true"
+          data-print-as-filtered-and-sorted-on-ui="true"
+          data-mobile-responsive="true"
+          data-key-events="true"
+          data-show-search-clear-button="true"
+          data-filter-control="true"
+          data-show-export="true"
+          data-click-to-select="true"
+          data-unique-id="store"
+        >
+          <thead>
+            <tr>
+              <th
+                data-field="state"
+                data-checkbox="true"
+                data-visible="false"
+              ></th>
+              <th
+                data-field="code__code"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+             كود الصنف
+              </th>
+              <th
+              data-field="product__name"
+              data-sortable="true"
+              data-filter-control="input"
+            >
+              اسم الصنف
+            </th>
+            <th
+            data-field="product__public_price"
+            data-sortable="true"
+            data-filter-control="input"
+          >
+            سعر الجمهور
+          </th>
+              <th
+                data-field="store__name"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                المخزن
+              </th>
+              <th
+              data-field="discount_precentage"
+              data-sortable="true"
+              data-filter-control="input"
+            >
+              الخصم
+            </th>
+            
+            </tr>
+          </thead>
+          <tbody>
+            {% for offer in offers %}
+            <tr>
+              <td></td>
+              <td>{{offer.code.code}}</td>
+              <td>{{offer.product.name}}</td>
+              <td>{{offer.product.public_price}}</td>
+              <td>{{offer.store.name}}</td>
+              <td>{{offer.discount_precentage}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

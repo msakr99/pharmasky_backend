@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% load static %}
+  <head>
+    {% include "head.html" %}
+    {% block head %}
+    {% endblock head %}
+  </head>
+  <body>
+    {% include "scripts.html" %}
+    {% include "navbar.html" %}
+    <div class="container">
+      {% block buttons %}
+      {% endblock %}
+
+      {% block dailyOrder %}
+      {% endblock %}
+      {% block highoffer %}
+      {% endblock %}
+      {% block product_images %}
+      {% endblock %}
+      {% block newitems %}
+      {% endblock %}
+      {% block newcodes %}
+      {% endblock %}
+      {% block StoreOffer %}
+      {% endblock %}
+      {% block Content %}
+      {% endblock Content %}
+    </div>
+  </body>
+  {% block scripts %}
+  {% endblock scripts %}
+</html>

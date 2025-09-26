@@ -1,0 +1,26 @@
+{% extends 'base.html' %}  
+{% load i18n %}
+
+{% block Content %}
+<div class="container h-100">
+    <div class="d-flex h-100 align-items-center justify-content-center">
+        <div class="w-100 text-bg-light p-5" style="border-radius: 1rem;">
+            <div class="row g-5">                
+                <div class="col col-md-6 d-flex flex-column gap-3 align-items-center justify-content-center" style="border-inline-end: 1px solid #24A9E0;">
+                    <h1>MEDICO</h1>
+                </div>
+                <div class="col-sm col-md-6">
+                    <h4 class="mb-3 text-center">{% translate "SIGN IN" %}</h4>
+                    <form method="post" class="needs-validation" >
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{form}}
+                        </div>
+                        <button type="submit" class="btn btn-primary">{% translate "Sign in" %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock Content %}

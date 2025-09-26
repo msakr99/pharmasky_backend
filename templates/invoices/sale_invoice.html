@@ -1,0 +1,193 @@
+{% load i18n %} {% load math %} {% load utils %} {% load static %}
+{% get_language_info for 'ar' as lang %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'css/invoice_page_styles.css' %}" />
+    <style>
+      body {
+        font-size: 10px;
+      }
+      
+      .table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      
+      .table.header td {
+        padding: 0.1rem 0.25rem;
+        text-align: center;
+        font-weight: bold;
+      }
+      
+      .table.header td.label {
+        width: 15%;
+        border-right: 1px dotted #000;
+      }
+      
+      .table-header {
+        border: 1px solid #888;
+        padding: 0.1rem 0.25rem;
+      }
+      
+      .table-cell {
+        border: 1px solid #888;
+        padding: 0.1rem 0.25rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <table class="table header" style="font-size: 8px;">
+      <tbody>
+        <tr>
+          <td class="label">
+            {% translate 'Invoice #' %}
+          </td>
+          <td>{{ data.id }}</td>
+          <td rowspan="6">
+            <div style="display: flex; align-items: center; justify-content: end;">
+              <img src="{% static 'images/logo-pdf.png' %}" style="width: 200px" alt="logo" />
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">
+            {% translate 'Date' %}
+          </td>
+          <td>{{ data.created_at|date }}</td>
+        </tr>
+        <tr>
+          <td class="label">
+            {% translate 'Customer' %}
+          </td>
+          <td>
+            {{ data.user_name }} - <span dir="ltr">{{ data.user_mobile_number }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">
+            {% translate 'Delivery' %}
+          </td>
+          <td>{{ data.delivery_name|default:'' }}</td>
+        </tr>
+        <tr>
+          <td class="label">
+            {% translate 'Store' %}
+          </td>
+          <td>الفا فارم</td>
+        </tr>
+        <tr>
+          <td class="label">
+            {% translate 'Sales' %}
+          </td>
+          <td>{{ data.seller_name }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <hr />
+    <table style="width: 100%; margin-bottom: 1rem; margin-top: 1rem; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="table-header">
+            {% translate '#' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Item' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Code' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Op. #' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Exp.' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Price' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Discount' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Qty.' %}
+          </th>
+          <th class="table-header">
+            {% translate 'Total' %}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in data.items %}
+          <tr>
+            <td class="table-cell">{{ forloop.counter }}</td>
+            <td class="table-cell">{{ item.product.name }}</td>
+            <td class="table-cell">
+              {% if item.actual_discount_precentage|floatformat:'0' == item.actual_discount_precentage|stringformat:'s' %}
+                {{ item.actual_discount_precentage|floatformat:'0' }}
+              {% else %}
+                {{ item.actual_discount_precentage|floatformat:'0.00' }}
+              {% endif %}
+            </td>
+            <td class="table-cell">{{ item.operating_number }}</td>
+            <td class="table-cell">{{ item.product_expiry_date|default_if_none:'N/A' }}</td>
+            <td class="table-cell">{{ item.product.public_price }}</td>
+            <td class="table-cell">{{ item.average_discount_percentage }} %</td>
+            <td class="table-cell">{{ item.quantity }}</td>
+            <td class="table-cell">{{ item.total_price }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <hr />
+    <table class="table" style="width: 100%">
+      <tbody>
+        <tr>
+          <td class="label table-cell" style="text-align: center;">إمضاء أو ختم الفاتورة يعتبر استلامها نهائياً</td>
+          <td class="label table-cell" style="text-align: center;">لا تعد الفاتورة خالصة السداد إلا بإيصال رسمي من الشركة</td>
+        </tr>
+        <tr>
+          <td class="label table-cell" style="text-align: center;">لا تقبل مرتجعات لأصناف الثلاجة</td>
+          <td class="label table-cell" style="text-align: center;">المرتجعات في مدة أقصاها 7 ايام من تاريخ الفاتورة</td>
+        </tr>
+      </tbody>
+    </table>
+    <table style="margin-top: 0.5rem; width: 100%; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td class="label table-cell" style="vertical-align: top;">
+            {% translate 'Invoice total' %}:
+          </td>
+          <td class="label table-cell" style="font-weight: bold; vertical-align: top;" colspan="3">
+            {{ data.total_price }}
+            <p style="margin-top:0.25rem; margin-bottom:0.25rem;">{{ data.total_price|num2words }}</p>
+          </td>
+        </tr>
+        <tr>
+          <td class="label table-cell">
+            {% translate 'Total items count' %}:
+          </td>
+          <td class="label table-cell" style="text-align: right;">{{ data.total_quantity|default:'0' }}</td>
+          <td class="label table-cell">
+            {% translate 'Total public price' %}:
+          </td>
+          <td class="label table-cell" style="text-align: right;">{{ data.total_public_price|default:'0.0' }}</td>
+        </tr>
+        <tr>
+          <td class="label table-cell">
+            {% translate 'Balance' %}:
+          </td>
+          <td class="label table-cell" style="text-align: right;">{{ data.balance|default:'0.0' }}</td>
+          <td class="label table-cell">
+            {% translate 'Previous Balance' %}:
+          </td>
+          <td class="label table-cell" style="text-align: right;">{{ data.prev_balance|default:'0.0' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

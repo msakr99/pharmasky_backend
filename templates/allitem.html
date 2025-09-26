@@ -1,0 +1,79 @@
+{% extends "base.html" %} {% load static %} {% block dailyOrder %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        All Product
+      </div>
+      <div class="card-body table-striped">
+        <table
+          id="testTbl"
+          data-toggle="table"
+          data-pagination="true"
+          data-search="true"
+          data-show-columns="true"
+          data-show-toggle="true"
+          data-show-columns-search="true"
+          data-show-pagination-switch="true"
+          data-show-fullscreen="true"
+          data-searchable="true"
+          data-show-print="true"
+          data-print-as-filtered-and-sorted-on-ui="true"
+          data-mobile-responsive="true"
+          data-key-events="true"
+          data-show-search-clear-button="true"
+          data-filter-control="true"
+          data-show-export="true"
+          data-click-to-select="true"
+          data-unique-id="order"
+        >
+          <thead>
+            <tr>
+              <th
+                data-field="state"
+                data-checkbox="true"
+                data-visible="false"
+              ></th>
+              
+              <th
+                data-field="id"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                id              </th>
+              <th
+                data-field="name"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                name
+              </th>
+              <th
+                data-field="public_price"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+              public_price
+              </th>
+ 
+
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td></td>
+              <td>{{order.id}}</td>
+              <td>{{order.name}}</td>
+              <td>{{order.public_price}}</td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

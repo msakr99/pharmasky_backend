@@ -1,0 +1,118 @@
+{% extends "base.html" %} {% load static %} {% block highoffer %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        High Offers
+      </div>
+      <form method="get" class="p-3">
+        {% for field in f.form %}
+        <div class="col-md-6 col-xl-4">
+          <label for="{{ field.id_for_label }}" class="form-label is-invalid" style="font-weight:500;">Search by name</label>
+          <div>{{ field }}</div>
+          {% if field.errors %}
+          <div class="invalid-feedback">
+            {{ field.errors }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="pt-3">
+          <input class="btn btn-primary" type="submit" />
+          <a class="btn btn-primary" href="?">Clear</a>
+        </div>
+      </form>
+      <div class="card-body table-striped">
+        <table id="testTbl" data-toggle="table" data-search="true" data-show-columns="true" data-show-toggle="true" data-show-columns-search="true" data-show-fullscreen="true" data-show-print="true" data-print-as-filtered-and-sorted-on-ui="true" data-mobile-responsive="true" data-key-events="true" data-filter-control="true" data-show-export="true" data-click-to-select="true" data-unique-id="id">
+          <thead>
+            <tr>
+              <th data-field="state" data-checkbox="true" data-visible="false"></th>
+              <th data-field="product__id" data-sortable="true">
+                id
+              </th>
+              <th data-field="code__code" data-sortable="true">
+                الكود
+              </th>
+              <th data-field="product__name" data-sortable="true">
+                الصنف
+              </th>
+              <th data-field="product__e_name" data-sortable="true">
+                e_name
+              </th>
+              <th data-field="product__public_price" data-sortable="true">
+                السعر
+              </th>
+              <th data-field="discount_precentage" data-sortable="true">
+                الخصم
+              </th>
+              <form action="/action_page.php">
+                <label for="quantity">Quantity (between 1 and 5):</label>
+                <input type="number" id="quantity" name="quantity" min="1" max="5">
+                <input type="submit">
+              </form>                الكمية
+              </th>
+              <th data-field="store__name" data-sortable="true">
+                اسم المخزن
+              </th>
+              <th data-field="store__id" data-sortable="true">
+                كود المخزن
+              </th>
+              <th data-field="offer_price" data-sortable="true">
+                السعر بعد الخصم
+              </th>
+              <th data-field="product__needed" data-sortable="true">
+                النواقص
+              </th>
+              <th data-field="min_purchase" data-sortable="true">
+                تحميل فاتورة
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for max_offer in page_obj %}
+            <tr>
+              <td></td>
+              <td>{{max_offer.offer.product.id}}</td>
+              <td>{{max_offer.offer.code.code}}</td>
+              <td>{{max_offer.offer.product.name}}</td>
+              <td>{{max_offer.offer.product.e_name}}</td>
+              <td>{{max_offer.offer.product.public_price}}</td>
+              <td>{{max_offer.discount_precentage}}</td>
+              <td>{{max_offer.offer.store.name}}</td>
+              <td>{{max_offer.offer.store.id}}</td>
+              <td>{{max_offer.offer.offer_price}}</td>
+              <td>{{max_offer.offer.product.needed}}</td>
+              <td>{{max_offer.offer.min_purchase}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <nav aria-label="Page navigation example">
+          <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1">&laquo; first</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            <li class="page-item">
+              <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.</span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">next</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

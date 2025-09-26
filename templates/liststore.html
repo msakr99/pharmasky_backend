@@ -1,0 +1,96 @@
+{% extends "base.html" %} {% load static %} {% block dailyOrder %}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4 mt-3">
+      <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-1"></i>
+        List Store
+      </div>
+      <div class="card-body table-striped">
+        <table
+          id="testTbl"
+          data-toggle="table"
+          data-pagination="true"
+          data-search="true"
+          data-show-columns="true"
+          data-show-toggle="true"
+          data-show-columns-search="true"
+          data-show-pagination-switch="true"
+          data-show-fullscreen="true"
+          data-searchable="true"
+          data-show-print="true"
+          data-print-as-filtered-and-sorted-on-ui="true"
+          data-mobile-responsive="true"
+          data-key-events="true"
+          data-show-search-clear-button="true"
+          data-filter-control="true"
+          data-show-export="true"
+          data-click-to-select="true"
+          data-unique-id="username"
+        >
+          <thead>
+            <tr>
+              <th
+                data-field="state"
+                data-checkbox="true"
+                data-visible="false"
+              ></th>
+              <th
+                data-field="name"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+             اسم المخزن
+              </th>
+              <th
+                data-field="username"
+                data-sortable="true"
+                data-filter-control="input"
+              >
+                رقم الموبايل
+              </th>
+              <th
+              data-sortable="true"
+              data-filter-control="input"
+            >
+              تحديث الاوفر
+            </th>
+            
+            <th
+            data-sortable="true"
+            data-filter-control="input"
+          >
+             اكواد المخزن
+          </th>
+          <th
+          data-sortable="true"
+          data-filter-control="input"
+        >
+           عروض المخزن
+        </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for store in stores %}
+            <tr>
+              <td></td>
+              <td>{{store.name}}</td>
+              <td>{{store.username}}</td>
+              <td>
+                <a href="/market/delete/{{store.id}}" class="btn btn-success m-auto">Delete Offers</a>
+              </td>
+              <td>
+                <a href="/liststore/listcodes/{{store.id}}" class="btn btn-success m-auto">Store Codes</a>
+              </td>
+              <td>
+                <a href="/liststore/listoffers/{{store.id}}" class="btn btn-success m-auto">Store Offers</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
