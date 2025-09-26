@@ -108,8 +108,8 @@ curl -X POST "https://api.digitalocean.com/v2/droplets" \
 
 إذا تغير IP الدروبليت:
 ```
-DROPLET_IP = NEW_IP_ADDRESS
-DROPLET_SSH_KEY = [نفس المفتاح الخاص]
+DROPLET_IP = 167.71.40.9
+DROPLET_SSH_KEY = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDQH0MsW1lzkRkpbOspKXb1dlpA1hHD8AONnpDGSFtld pharmasky-github-deploy
 ```
 
 ### 2. اختبار SSH Connection
