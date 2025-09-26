@@ -300,6 +300,9 @@ LOCALE_PATHS = (os.path.join(BASE_DIR, "locale/"),)
 # Security Settings
 SECURE_SSL_REDIRECT = env('SECURE_SSL_REDIRECT', default=False)
 
+# Cross-Origin-Opener-Policy setting (disable for HTTP)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = env('SECURE_CROSS_ORIGIN_OPENER_POLICY', default=None)
+
 if not DEBUG:
     SECURE_HSTS_SECONDS = 30
     SECURE_HSTS_PRELOAD = True
