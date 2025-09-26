@@ -77,9 +77,9 @@ DATABASE_URL=postgresql://doadmin:AVNS_g62jyoo4mcu0BkfRsdM@pharmasky-db-do-user-
 # Firebase Configuration
 FIREBASE_CREDENTIALS=pharmasky-2a5a3-firebase-adminsdk-fbsvc-4aa69c05c7.json
 
-# DigitalOcean Spaces Configuration - UPDATE WITH YOUR ACTUAL KEYS!
-AWS_ACCESS_KEY_ID=DO00JME92LMKTFP2BBA3
-AWS_SECRET_ACCESS_KEY=your-digitalocean-spaces-secret-key-here
+# DigitalOcean Spaces Configuration
+AWS_ACCESS_KEY_ID=DO009ZYJD3RNN3PFRRQ3
+AWS_SECRET_ACCESS_KEY=q8DX9Ts4+apP95ESQYPBVpuOI8vgN4i1DoSXRj6Inng
 AWS_STORAGE_BUCKET_NAME=pharmasky-media
 AWS_S3_ENDPOINT_URL=https://pharmasky-media.fra1.digitaloceanspaces.com
 AWS_S3_REGION_NAME=fra1
@@ -99,23 +99,7 @@ EOF
 
 print_success "تم تحديث ملف البيئة"
 
-# Check if AWS_SECRET_ACCESS_KEY is still placeholder
-if grep -q "your-digitalocean-spaces-secret-key-here" .env.production; then
-    print_warning "⚠️ لا يزال يجب تحديث مفتاح DigitalOcean Spaces!"
-    
-    # Prompt for the key
-    echo ""
-    print_status "هل تريد إدخال مفتاح DigitalOcean Spaces الآن؟ (y/n)"
-    read -r response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
-        echo -n "أدخل AWS_SECRET_ACCESS_KEY: "
-        read -r secret_key
-        if [ ! -z "$secret_key" ]; then
-            sed -i "s/your-digitalocean-spaces-secret-key-here/$secret_key/g" .env.production
-            print_success "تم تحديث المفتاح بنجاح"
-        fi
-    fi
-fi
+print_success "✅ تم تحديث مفاتيح DigitalOcean Spaces"
 
 # Restart containers
 print_status "إعادة تشغيل الحاويات..."
@@ -161,13 +145,7 @@ print_status "   • Admin CSS (local): http://$CURRENT_IP/static/admin/css/base
 print_status "   • Admin CSS (Spaces): https://pharmasky-media.fra1.digitaloceanspaces.com/static/admin/css/base.css"
 
 echo ""
-if grep -q "your-digitalocean-spaces-secret-key-here" .env.production; then
-    print_warning "⚠️ تحذير: لا يزال يجب تحديث AWS_SECRET_ACCESS_KEY في .env.production"
-    print_status "اذهب إلى: https://cloud.digitalocean.com/spaces/pharmasky-media?i=8b5a82"
-    print_status "Settings → API → Generate New Key"
-else
-    print_success "🎉 تم الإعداد بنجاح!"
-fi
+print_success "🎉 تم الإعداد بنجاح! مفاتيح DigitalOcean Spaces محدثة ومُطبقة."
 
 echo ""
 print_status "📝 إذا كانت الملفات الثابتة لا تزال لا تعمل:"
