@@ -25,3 +25,8 @@ pandas
 weasyprint
 drf-excel
 drf-nested-routers
+gunicorn
+whitenoise
+django-health-check
+sentry-sdk
+fuzzywuzzy

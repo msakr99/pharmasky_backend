@@ -1,0 +1,82 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
+        
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to server
+      run: |
+        ssh root@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+        
+        # Navigate to project directory
+        cd /opt/pharmasky
+        
+        # Pull latest changes from GitHub
+        echo "🔄 Pulling latest changes..."
+        git fetch origin
+        git reset --hard origin/main
+        
+        # Make scripts executable
+        chmod +x deploy.sh
+        chmod +x manage_deployment.sh
+        
+        # Copy production environment if not exists
+        if [ ! -f .env.production ]; then
+          cp production.env .env.production
+          echo "⚠️  Please update .env.production with your actual configuration"
+        fi
+        
+        # Build and deploy containers
+        echo "🚀 Building and deploying containers..."
+        docker-compose down
+        docker-compose build --no-cache
+        docker-compose up -d
+        
+        # Wait for services to be ready
+        echo "⏳ Waiting for services to be ready..."
+        sleep 30
+        
+        # Run migrations
+        echo "🗄️  Running database migrations..."
+        docker-compose exec -T web python manage.py migrate
+        
+        # Collect static files
+        echo "📦 Collecting static files..."
+        docker-compose exec -T web python manage.py collectstatic --noinput
+        
+        # Check services status
+        echo "✅ Checking services status..."
+        docker-compose ps
+        
+        echo "🎉 Deployment completed successfully!"
+        
+        ENDSSH
+        
+    - name: Health check
+      run: |
+        sleep 10
+        response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.DROPLET_IP }}/health/ || echo "000")
+        if [ "$response" = "200" ]; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed with status: $response"
+          exit 1
+        fi
