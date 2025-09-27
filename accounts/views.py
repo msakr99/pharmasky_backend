@@ -1,34 +1,69 @@
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from accounts.choices import PaymentMethodChoice, Role
+from rest_framework.permissions import IsAuthenticated
+from accounts.choices import Role
 from accounts.serializers import (
+    CustomAuthTokenSerializer,
     PharmacyCreateSerializer,
     UserFullReadSerializer,
     UserReadSerializer,
 )
 from accounts.filters import SimpleUserFilter
-from accounts.permissions import *
+from accounts.permissions import (
+    StaffRoleAuthentication,
+    SalesRoleAuthentication,
+    ManagerRoleAuthentication,
+    AreaManagerRoleAuthentication,
+)
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
     RetrieveAPIView,
     GenericAPIView,
-    get_object_or_404,
 )
 from core.views.abstract_paginations import CustomPageNumberPagination
 from rest_framework.authtoken.views import ObtainAuthToken
-from django.db.models import Prefetch, F, Sum
+from accounts.models import User
 from django.apps import apps
-from django.utils import timezone
-
-from core.views.mixins import PDFFileMixin
-from core.views.renderers import PDFRenderer
-from django.utils.translation import activate
 
 get_model = apps.get_model
 
 
+class BaseUserQuerysetMixin:
+    """Mixin to handle common user queryset logic"""
+    
+    def get_base_user_queryset(self):
+        """Get base queryset with common select_related optimizations"""
+        return User.objects.exclude(is_superuser=True).select_related(
+            "profile",
+            "profile__sales",
+            "profile__data_entry",
+            "profile__area_manager",
+            "profile__delivery",
+            "profile__payment_period",
+            "account",
+        )
+    
+    def filter_queryset_by_user_role(self, queryset, user):
+        """Filter queryset based on user role"""
+        if user.is_superuser:
+            return queryset
+        
+        match user.role:
+            case Role.SALES:
+                return queryset.filter(profile__sales=user)
+            case Role.MANAGER:
+                return queryset.filter(profile__manager=user)
+            case _:
+                return queryset.none()
+
+
 class LoginAPIView(ObtainAuthToken):
+    """
+    Login API endpoint that accepts username and password and returns auth token
+    """
+    serializer_class = CustomAuthTokenSerializer
+    
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -47,7 +82,7 @@ class UserDataAPIView(GenericAPIView):
         return Response(serializer.data)
 
 
-class UserListAPIView(ListAPIView):
+class UserListAPIView(BaseUserQuerysetMixin, ListAPIView):
     permission_classes = [StaffRoleAuthentication]
     serializer_class = UserFullReadSerializer
     search_fields = ("name", "e_name", "username")
@@ -70,60 +105,18 @@ class UserListAPIView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-
-        queryset = User.objects.exclude(is_superuser=True).select_related(
-            "profile",
-            "profile__sales",
-            "profile__data_entry",
-            "profile__area_manager",
-            "profile__delivery",
-            "profile__payment_period",
-            "account",
-        )
-
-        if user.is_superuser:
-            return queryset
-
-        match user.role:
-            case Role.SALES:
-                queryset = queryset.filter(profile__sales=user)
-            case Role.MANAGER:
-                queryset = queryset.filter(profile__manager=user)
-            case _r:
-                queryset = queryset.none()
-
-        return queryset
+        base_queryset = self.get_base_user_queryset()
+        return self.filter_queryset_by_user_role(base_queryset, user)
 
 
-class UserRetrieveAPIView(RetrieveAPIView):
+class UserRetrieveAPIView(BaseUserQuerysetMixin, RetrieveAPIView):
     permission_classes = [StaffRoleAuthentication]
     serializer_class = UserFullReadSerializer
 
     def get_queryset(self):
         user = self.request.user
-
-        queryset = User.objects.exclude(is_superuser=True).select_related(
-            "profile",
-            "profile__sales",
-            "profile__data_entry",
-            "profile__area_manager",
-            "profile__delivery",
-            "profile__payment_period",
-            "account",
-        )
-
-        if user.is_superuser:
-            return queryset
-
-        match user.role:
-            case Role.SALES:
-                queryset = queryset.filter(profile__sales=user)
-            case Role.MANAGER:
-                queryset = queryset.filter(profile__manager=user)
-            case _r:
-                queryset = queryset.none()
-
-        return queryset
+        base_queryset = self.get_base_user_queryset()
+        return self.filter_queryset_by_user_role(base_queryset, user)
 
 
 class SimpleUserListAPIView(ListAPIView):

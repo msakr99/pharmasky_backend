@@ -1,24 +1,52 @@
-from decimal import Decimal
-from email.policy import default
-from accounts.choices import AccountTransactionTypeChoice, FinancialAccountTransactionEffect
-from accounts.utils import affect_pharmacy_account, affect_seller_account
+# Removed unused imports: Decimal, default, AccountTransactionTypeChoice, 
+# FinancialAccountTransactionEffect, affect_pharmacy_account, affect_seller_account
 from core.serializers.abstract_serializers import (
     BaseModelSerializer,
     BaseUserCreateSerializer,
     ExtendedPhoneNumberField,
     QueryParameterHyperlinkedIdentityField,
 )
-from accounts.models import AreaManager, DataEntry, Delivery, Pharmacy, Sales, Store, User
+from accounts.models import Pharmacy, User
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from django.apps import apps
-from django.db import transaction
-from django.utils import timezone
+from django.contrib.auth import authenticate
 
 from finance.serializers import AccountReadSerializer
 from profiles.serializers import UserProfileReadSerializer
 
 get_model = apps.get_model
+
+
+# Custom Login Serializer that only requires username and password
+class CustomAuthTokenSerializer(serializers.Serializer):
+    username = serializers.CharField(label=_("Username"))
+    password = serializers.CharField(
+        label=_("Password"),
+        style={'input_type': 'password'},
+        trim_whitespace=False
+    )
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        if username and password:
+            user = authenticate(request=self.context.get('request'),
+                                username=username, password=password)
+
+            # The authenticate call simply returns None for is_active=False
+            # users. (Assuming the default ModelBackend authentication
+            # backend.)
+            if not user:
+                msg = _('Unable to log in with provided credentials.')
+                raise serializers.ValidationError(msg, code='authorization')
+        else:
+            msg = _('Must include "username" and "password".')
+            raise serializers.ValidationError(msg, code='authorization')
+
+        attrs['user'] = user
+        return attrs
 
 
 # NOTE:Tested and working fine
