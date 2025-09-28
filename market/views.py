@@ -18,12 +18,9 @@ from rest_framework.generics import (
     UpdateAPIView,
 )
 
-from accounts.permissions import (
-    DataEntryRoleAuthentication,
-    ManagerRoleAuthentication,
-    PharmacyRoleAuthentication,
-    SalesRoleAuthentication,
-)
+from core.permissions import AllAuthenticatedUsers, SmartRolePermission
+from accounts.choices import Role
+from accounts.permissions import StaffRoleAuthentication
 from core.views.abstract_paginations import CustomPageNumberPagination
 from market.filters import ProductFilter, ProductCodeFilter
 from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
@@ -56,7 +53,8 @@ class TemplateTest(TemplateView):
 
 class CompanyListAPIView(ListAPIView):
     """List all companies with pagination and filtering."""
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = CompanyReadSerializer
     ordering_fields = ["id", "name", "e_name", "last_updated_at"]
     ordering = ["-last_updated_at"]
@@ -65,15 +63,14 @@ class CompanyListAPIView(ListAPIView):
 
 class CategoryListAPIView(ListAPIView):
     """List all categories with pagination and filtering."""
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = CategoryReadSerializer
     queryset = Category.objects.all()
 
 
 class ProductListAPIView(ListAPIView):
-    permission_classes = [
-        SalesRoleAuthentication | DataEntryRoleAuthentication | PharmacyRoleAuthentication | ManagerRoleAuthentication
-    ]
+    permission_classes = [AllAuthenticatedUsers]
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
@@ -130,7 +127,8 @@ class ProductListAPIView(ListAPIView):
 
 
 class ProductAlternativeListAPIView(ListAPIView):
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
@@ -165,7 +163,8 @@ class ProductAlternativeListAPIView(ListAPIView):
 
 
 class ProductInstanceListAPIView(ListAPIView):
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
@@ -317,7 +316,8 @@ class ProductCodeListAPIView(ListAPIView):
 
 
 class PharmacyProductWishListListAPIView(ListAPIView):
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = PharmacyProductWishListSerializer
     pagination_class = LargePageNumberPagination
     filterset_fields = ["product__name", "product__e_name"]
@@ -329,7 +329,8 @@ class PharmacyProductWishListListAPIView(ListAPIView):
 
 
 class UserPharmacyProductWishListListAPIView(ListAPIView):
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = PharmacyProductWishListSerializer
     search_fields = ["product__name", "product__e_name"]
     ordering_fields = ["id", "product__name", "product__e_name"]
@@ -344,6 +345,7 @@ class UserPharmacyProductWishListListAPIView(ListAPIView):
 
 
 class UserPharmacyProductWishListCreateAPIView(CreateAPIView):
-    permission_classes = [PharmacyRoleAuthentication]
+    permission_classes = [SmartRolePermission]
+    required_roles = [Role.PHARMACY]
     serializer_class = PharmacyProductWishListSerializer
     queryset = PharmacyProductWishList.objects.none()
