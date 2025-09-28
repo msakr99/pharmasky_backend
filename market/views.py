@@ -20,7 +20,7 @@ from rest_framework.generics import (
 
 from core.permissions import AllAuthenticatedUsers, SmartRolePermission
 from accounts.choices import Role
-from accounts.permissions import StaffRoleAuthentication
+from accounts.permissions import StaffRoleAuthentication, ManagerRoleAuthentication
 from core.views.abstract_paginations import CustomPageNumberPagination
 from market.filters import ProductFilter, ProductCodeFilter
 from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
