@@ -9,7 +9,7 @@ admin.site.site_header = "Pharmasky"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("__debug__/", include("debug_toolbar.urls")),
+    # path("__debug__/", include("debug_toolbar.urls")),  # Disabled for production
     path("accounts/", include("accounts.urls")),
     path("market/", include("market.urls")),
     path("finance/", include("finance.urls")),
