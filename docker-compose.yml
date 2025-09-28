@@ -12,6 +12,9 @@ services:
       - media_volume:/app/media
     environment:
       - DEBUG=False
+      - SECRET_KEY=pharmasky-change-this-to-a-very-long-random-secret-key-in-production-12345
+      - ALLOWED_HOSTS=167.71.40.9,129.212.140.152,164.90.217.81,localhost,127.0.0.1
+      - DATABASE_URL=postgresql://doadmin:AVNS_g62jyoo4mcu0BkfRsdM@pharmasky-db-do-user-17921548-0.h.db.ondigitalocean.com:25060/defaultdb?sslmode=require
     env_file:
       - production.env
     depends_on:
