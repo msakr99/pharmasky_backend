@@ -13,7 +13,7 @@ services:
     environment:
       - DEBUG=False
     env_file:
-      - .env.production
+      - production.env
     depends_on:
       - redis
     networks:
@@ -56,7 +56,7 @@ services:
       - .:/app
       - media_volume:/app/media
     env_file:
-      - .env.production
+      - production.env
     depends_on:
       - web
       - redis
@@ -71,7 +71,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env.production
+      - production.env
     depends_on:
       - web
       - redis
