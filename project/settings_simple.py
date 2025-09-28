@@ -151,22 +151,16 @@ AUTH_USER_MODEL = 'accounts.User'
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_BACKEND', 'redis://redis:6379/0')
 
-# Logging
+# Logging (simplified for Docker)
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
+        'console': {
+            'class': 'logging.StreamHandler',
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
+    'root': {
+        'handlers': ['console'],
     },
 }
