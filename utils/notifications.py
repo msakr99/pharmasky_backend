@@ -3,7 +3,7 @@ Notification utilities for PharmaSky application.
 This module provides helper functions for sending push notifications.
 """
 
-from push_notifications.models import GCMDevice
+# from push_notifications.models import GCMDevice  # Disabled temporarily
 from firebase_admin import messaging
 from typing import Optional, Dict, Any
 import logging
