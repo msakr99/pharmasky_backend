@@ -179,3 +179,72 @@ class ReadOnlyPermission(BasePermission):
             
         return request.method in ['GET', 'HEAD', 'OPTIONS']
 
+
+class SmartRolePermission(BasePermission):
+    """
+    نظام صلاحيات ذكي يتعامل مع جميع الأدوار بذكاء
+    """
+    
+    message = "You do not have permission to perform this action."
+    
+    def has_permission(self, request: Request, view: Any) -> bool:
+        # التحقق من المصادقة
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Superuser دائماً له صلاحية
+        if request.user.is_superuser:
+            return True
+            
+        # ADMIN دائماً له صلاحية (حل المشكلة الأساسية)
+        if request.user.role == Role.ADMIN:
+            return True
+        
+        # التحقق من الصلاحيات المخصصة للـ view
+        if hasattr(view, 'required_roles'):
+            return request.user.role in view.required_roles
+            
+        # إذا لم تُحدد صلاحيات، السماح لجميع المستخدمين المسجلين
+        return True
+
+
+class AllAuthenticatedUsers(BasePermission):
+    """صلاحية لجميع المستخدمين المسجلين"""
+    
+    message = "Authentication required."
+    
+    def has_permission(self, request: Request, view: Any) -> bool:
+        return bool(request.user and request.user.is_authenticated)
+
+
+class StaffOnly(BasePermission):
+    """صلاحية للموظفين فقط"""
+    
+    message = "Staff access required."
+    
+    def has_permission(self, request: Request, view: Any) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        if request.user.is_superuser or request.user.role == Role.ADMIN:
+            return True
+            
+        return request.user.role in [
+            Role.MANAGER, Role.AREA_MANAGER, Role.SALES, 
+            Role.DATA_ENTRY, Role.DELIVERY
+        ]
+
+
+class ManagementOnly(BasePermission):
+    """صلاحية للإدارة فقط"""
+    
+    message = "Management access required."
+    
+    def has_permission(self, request: Request, view: Any) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        if request.user.is_superuser or request.user.role == Role.ADMIN:
+            return True
+            
+        return request.user.role in [Role.MANAGER, Role.AREA_MANAGER, Role.SALES]  # Management roles
