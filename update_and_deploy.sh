@@ -10,11 +10,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration - عدّل هذه القيم حسب إعداداتك
-DROPLET_IP="your_droplet_ip"          # عنوان IP الخاص بالـ Droplet
+# Configuration - معلومات السيرفر من server-config.md
+DROPLET_IP="129.212.140.152"         # عنوان IP الخاص بالـ Droplet
 DROPLET_USER="root"                   # المستخدم (root أو اسم المستخدم)
 PROJECT_PATH="/opt/pharmasky"         # مسار المشروع في الـ Droplet
 BRANCH="main"                         # الفرع المطلوب تحديثه
+SSH_KEY="~/.ssh/pharmasky-github-deploy"  # مسار SSH key
 
 echo -e "${BLUE}🚀 PharmasSky Auto Update & Deploy Script${NC}"
 echo -e "${BLUE}=============================================${NC}"
@@ -147,10 +148,10 @@ sed -i "s|BRANCH_PLACEHOLDER|$BRANCH|g" droplet_update.sh
 print_info "نسخ وتنفيذ script التحديث على الـ Droplet..."
 
 # Copy script to droplet
-scp droplet_update.sh $DROPLET_USER@$DROPLET_IP:/tmp/
+scp -i $SSH_KEY droplet_update.sh $DROPLET_USER@$DROPLET_IP:/tmp/
 
 # Execute the script on droplet
-ssh $DROPLET_USER@$DROPLET_IP 'chmod +x /tmp/droplet_update.sh && /tmp/droplet_update.sh && rm /tmp/droplet_update.sh'
+ssh -i $SSH_KEY $DROPLET_USER@$DROPLET_IP 'chmod +x /tmp/droplet_update.sh && /tmp/droplet_update.sh && rm /tmp/droplet_update.sh'
 
 if [ $? -eq 0 ]; then
     print_status "تم تحديث الـ Droplet بنجاح!"

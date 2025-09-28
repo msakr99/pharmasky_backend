@@ -1,38 +1,14 @@
-from decimal import Decimal
+"""Market views for PharmaSky application.
+
+This module contains API views for managing products, companies, categories,
+and related market functionality.
+"""
+
 from django.apps import apps
-from django.contrib.auth import get_user_model
-from accounts.permissions import (
-    AreaManagerRoleAuthentication,
-    DataEntryRoleAuthentication,
-    DeliveryRoleAuthentication,
-    IsAuthenticated,
-    ManagerRoleAuthentication,
-    PharmacyRoleAuthentication,
-    SalesRoleAuthentication,
-    StaffRoleAuthentication,
-    StoreRoleAuthentication,
-)
+from django.utils import timezone
+from django.views.generic import TemplateView
+from django.db import models
 from rest_framework.exceptions import ValidationError
-from core.views.abstract_paginations import CustomPageNumberPagination, LargePageNumberPagination
-from core.views.mixins import PDFFileMixin
-from core.views.renderers import PDFRenderer
-from accounts.choices import Role
-from invoices.choices import (
-    PurchaseInvoiceStatusChoice,
-    PurchaseReturnInvoiceStatusChoice,
-    SaleInvoiceStatusChoice,
-    SaleReturnInvoiceStatusChoice,
-)
-from market.serializers import (
-    CategoryReadSerializer,
-    CompanyReadSerializer,
-    PharmacyProductWishListSerializer,
-    ProductCodeReadSerializer,
-    ProductCreateUpdateSerilizer,
-    ProductReadSerializer,
-)
-from market.filters import ProductFilter, StoreProductCodeFilter, ProductCodeFilter
-from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
 from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
@@ -41,9 +17,24 @@ from rest_framework.generics import (
     DestroyAPIView,
     UpdateAPIView,
 )
-from django.utils import timezone
-from django.views.generic import TemplateView
-from django.db import models
+
+from accounts.permissions import (
+    DataEntryRoleAuthentication,
+    ManagerRoleAuthentication,
+    PharmacyRoleAuthentication,
+    SalesRoleAuthentication,
+)
+from core.views.abstract_paginations import CustomPageNumberPagination
+from market.filters import ProductFilter, ProductCodeFilter
+from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
+from market.serializers import (
+    CategoryReadSerializer,
+    CompanyReadSerializer,
+    PharmacyProductWishListSerializer,
+    ProductCodeReadSerializer,
+    ProductCreateUpdateSerilizer,
+    ProductReadSerializer,
+)
 
 get_model = apps.get_model
 
@@ -64,33 +55,19 @@ class TemplateTest(TemplateView):
 
 
 class CompanyListAPIView(ListAPIView):
+    """List all companies with pagination and filtering."""
     permission_classes = [PharmacyRoleAuthentication]
     serializer_class = CompanyReadSerializer
     ordering_fields = ["id", "name", "e_name", "last_updated_at"]
     ordering = ["-last_updated_at"]
-
-    def get_queryset(self):
-        return Company.objects.all()
-
-    def get(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
-        return self.get_paginated_response(serializer.data)
+    queryset = Company.objects.all()
 
 
 class CategoryListAPIView(ListAPIView):
+    """List all categories with pagination and filtering."""
     permission_classes = [PharmacyRoleAuthentication]
     serializer_class = CategoryReadSerializer
-
-    def get_queryset(self):
-        return Category.objects.all()
-
-    def get(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
-        return self.get_paginated_response(serializer.data)
+    queryset = Category.objects.all()
 
 
 class ProductListAPIView(ListAPIView):

@@ -1,50 +1,20 @@
 #!/bin/bash
 
-# Setup SSH key for GitHub Actions deployment
-# هذا الملف يقوم بإعداد SSH key على الدروبليت للنشر التلقائي
+# Script to setup SSH key on the server
+# This script should be run ON THE SERVER (not locally)
 
-echo "🔑 إعداد SSH key للنشر التلقائي من GitHub..."
+echo "🔑 Setting up SSH key for pharmasky-github-deploy..."
 
-# SSH public key for GitHub Actions
-SSH_PUBLIC_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDQH0MsW1lzkRkpbOspKXb1dlpA1hHD8AONnpDGSFtld pharmasky-github-deploy"
+# Create .ssh directory if it doesn't exist
+mkdir -p ~/.ssh
 
 # Add the public key to authorized_keys
-mkdir -p ~/.ssh
-echo "$SSH_PUBLIC_KEY" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICiYHpODLkXsNKxolkjyIN6xWhWULWKnvL8cyNaNr+Jp pharmasky-github-deploy" >> ~/.ssh/authorized_keys
 
 # Set proper permissions
-chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
 
-# Install git if not already installed
-if ! command -v git >/dev/null 2>&1; then
-    echo "📦 Installing git..."
-    apt update
-    apt install -y git
-fi
-
-# Create project directory if not exists
-if [ ! -d "/opt/pharmasky" ]; then
-    echo "📁 Creating project directory..."
-    mkdir -p /opt/pharmasky
-    
-    # Clone the repository
-    echo "📥 Cloning repository from GitHub..."
-    git clone https://github.com/msakr99/pharmasky_backend.git /opt/pharmasky
-    
-    # Set proper permissions
-    chown -R root:root /opt/pharmasky
-    chmod +x /opt/pharmasky/*.sh
-else
-    echo "📁 Project directory already exists"
-fi
-
-echo "✅ SSH key setup completed!"
-echo ""
-echo "🔍 تم إعداد المفتاح التالي:"
-echo "$SSH_PUBLIC_KEY"
-echo ""
-echo "📝 الخطوات التالية:"
-echo "1. أضف المفتاح الخاص إلى GitHub Secrets"
-echo "2. تأكد من رفع التغييرات إلى GitHub"
-echo "3. اختبر النشر التلقائي"
+echo "✅ SSH key has been added successfully!"
+echo "🚀 You can now connect from local machine using:"
+echo "ssh -i ~/.ssh/pharmasky-github-deploy root@129.212.140.152"
