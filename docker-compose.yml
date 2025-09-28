@@ -12,9 +12,14 @@ services:
       - media_volume:/app/media
     environment:
       - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=project.settings_simple
       - SECRET_KEY=pharmasky-change-this-to-a-very-long-random-secret-key-in-production-12345
       - ALLOWED_HOSTS=167.71.40.9,129.212.140.152,164.90.217.81,localhost,127.0.0.1
       - DATABASE_URL=postgresql://doadmin:AVNS_g62jyoo4mcu0BkfRsdM@pharmasky-db-do-user-17921548-0.h.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+      - CORS_ALLOWED_ORIGINS=http://167.71.40.9,http://129.212.140.152,http://164.90.217.81,http://localhost
+      - CSRF_TRUSTED_ORIGINS=http://167.71.40.9,http://129.212.140.152,http://164.90.217.81,http://localhost
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
     env_file:
       - production.env
     depends_on:
