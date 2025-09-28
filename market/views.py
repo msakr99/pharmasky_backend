@@ -21,7 +21,13 @@ from rest_framework.generics import (
 from core.permissions import AllAuthenticatedUsers, SmartRolePermission
 from accounts.choices import Role
 from accounts.permissions import StaffRoleAuthentication, ManagerRoleAuthentication
-from core.views.abstract_paginations import CustomPageNumberPagination
+from invoices.choices import (
+    PurchaseInvoiceStatusChoice,
+    SaleInvoiceStatusChoice, 
+    PurchaseReturnInvoiceStatusChoice,
+    SaleReturnInvoiceStatusChoice
+)
+from core.views.abstract_paginations import CustomPageNumberPagination, LargePageNumberPagination
 from market.filters import ProductFilter, ProductCodeFilter
 from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
 from market.serializers import (
