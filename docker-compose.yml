@@ -12,6 +12,7 @@ services:
       - media_volume:/app/media
     environment:
       - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=project.settings.production
     env_file:
       - production.env
     depends_on:
