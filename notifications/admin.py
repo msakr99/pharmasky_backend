@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from core.admin.abstract_admin import DefaultBaseAdminItems
 from notifications.models import Notification, Topic, TopicSubscription
-from notifications.utils import send_user_fcm_message
+# from notifications.utils import send_user_fcm_message  # Temporarily disabled
 
 
 @admin.register(Notification)
@@ -15,13 +15,13 @@ class NotificationModelAdmin(DefaultBaseAdminItems):
     def mark_as_unread(self, request, queryset):
         queryset.update(is_read=False)
 
-    @admin.action(description="Resend notification to users")
-    def resend_notification(self, request, queryset):
-        for notification in queryset:
-            if notification.user:
-                send_user_fcm_message(notification)
+    # @admin.action(description="Resend notification to users")
+    # def resend_notification(self, request, queryset):
+    #     for notification in queryset:
+    #         if notification.user:
+    #             send_user_fcm_message(notification)
 
-    actions = [mark_as_read, mark_as_unread, resend_notification]
+    actions = [mark_as_read, mark_as_unread]  # resend_notification temporarily disabled
     list_display = ("id", "user", "topic", "title", "created_at", "is_read")
     search_fields = ("title", "message")
     list_filter = ("is_read", "created_at")
