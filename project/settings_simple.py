@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
     'django_filters',
+    # Custom apps
     'accounts',
     'market',
     'inventory',
@@ -40,6 +41,9 @@ INSTALLED_APPS = [
     'ads',
     'shop',
     'utils',
+    # Third party apps (moved to end to avoid loading issues)
+    # 'django_celery_beat',
+    # 'push_notifications',
 ]
 
 MIDDLEWARE = [
