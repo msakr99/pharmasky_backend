@@ -3,7 +3,7 @@ from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from push_notifications.api.rest_framework import GCMDeviceAuthorizedViewSet
+# from push_notifications.api.rest_framework import GCMDeviceAuthorizedViewSet  # Disabled temporarily
 
 admin.site.site_header = "Pharmasky"
 
@@ -19,16 +19,17 @@ urlpatterns = [
     path("shop/", include("shop.urls")),
     path("inventory/", include("inventory.urls")),
     path("profiles/", include("profiles.urls")),
-    path(
-        "push-notifications/devices/fcm/register/",
-        GCMDeviceAuthorizedViewSet.as_view({"post": "create"}),
-        name="gcm-device-create",
-    ),
-    path(
-        "push-notifications/devices/fcm/unregister/",
-        GCMDeviceAuthorizedViewSet.as_view({"delete": "destroy"}),
-        name="gcm-device-delete",
-    ),
+    # Push notifications URLs temporarily disabled
+    # path(
+    #     "push-notifications/devices/fcm/register/",
+    #     GCMDeviceAuthorizedViewSet.as_view({"post": "create"}),
+    #     name="gcm-device-create",
+    # ),
+    # path(
+    #     "push-notifications/devices/fcm/unregister/",
+    #     GCMDeviceAuthorizedViewSet.as_view({"delete": "destroy"}),
+    #     name="gcm-device-delete",
+    # ),
 ]
 
 
@@ -42,3 +43,7 @@ urlpatterns += [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+
+
