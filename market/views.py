@@ -17,6 +17,7 @@ from rest_framework.generics import (
     DestroyAPIView,
     UpdateAPIView,
 )
+from rest_framework.response import Response
 
 from core.permissions import AllAuthenticatedUsers, SmartRolePermission
 from accounts.choices import Role
@@ -29,7 +30,7 @@ from invoices.choices import (
 )
 from core.views.abstract_paginations import CustomPageNumberPagination, LargePageNumberPagination
 from market.filters import ProductFilter, ProductCodeFilter
-from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode
+from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode, StoreProductCodeUpload, Store
 from market.serializers import (
     CategoryReadSerializer,
     CompanyReadSerializer,
@@ -37,6 +38,11 @@ from market.serializers import (
     ProductCodeReadSerializer,
     ProductCreateUpdateSerilizer,
     ProductReadSerializer,
+    StoreProductCodeUploadSerializer,
+    StoreProductCodeUploadCreateSerializer,
+    BulkStoreProductCodeUploadSerializer,
+    UploadProgressSerializer,
+    StoreSerializer,
 )
 
 get_model = apps.get_model
@@ -355,3 +361,258 @@ class UserPharmacyProductWishListCreateAPIView(CreateAPIView):
     required_roles = [Role.PHARMACY]
     serializer_class = PharmacyProductWishListSerializer
     queryset = PharmacyProductWishList.objects.none()
+
+
+
+
+# API Views for Store Product Code Uploads
+class StoreProductCodeUploadListAPIView(ListAPIView):
+    """
+    API view for listing store product code uploads
+    """
+    serializer_class = StoreProductCodeUploadSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    pagination_class = CustomPageNumberPagination
+    
+    def get_queryset(self):
+        """Filter uploads based on user and query parameters"""
+        queryset = StoreProductCodeUpload.objects.select_related('store', 'uploaded_by').order_by('-uploaded_at')
+        
+        # Filter by user if not staff
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        
+        # Apply filters from query parameters
+        status = self.request.query_params.get('status')
+        store_id = self.request.query_params.get('store')
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        if store_id:
+            queryset = queryset.filter(store_id=store_id)
+        
+        if date_from:
+            queryset = queryset.filter(uploaded_at__date__gte=date_from)
+        
+        if date_to:
+            queryset = queryset.filter(uploaded_at__date__lte=date_to)
+        
+        return queryset
+
+
+class StoreProductCodeUploadCreateAPIView(CreateAPIView):
+    """
+    API view for creating store product code uploads
+    """
+    serializer_class = StoreProductCodeUploadCreateSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    
+    def perform_create(self, serializer):
+        """Create upload and start processing"""
+        upload = serializer.save()
+        
+        # Return the created upload with full details
+        return upload
+
+
+class StoreProductCodeUploadRetrieveAPIView(RetrieveAPIView):
+    """
+    API view for retrieving a specific store product code upload
+    """
+    serializer_class = StoreProductCodeUploadSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    queryset = StoreProductCodeUpload.objects.select_related('store', 'uploaded_by')
+    
+    def get_queryset(self):
+        """Filter based on user permissions"""
+        queryset = super().get_queryset()
+        
+        # Filter by user if not staff
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        
+        return queryset
+
+
+class BulkStoreProductCodeUploadCreateAPIView(CreateAPIView):
+    """
+    API view for bulk uploading store product codes
+    """
+    serializer_class = BulkStoreProductCodeUploadSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    
+    def create(self, request, *args, **kwargs):
+        """Handle bulk upload creation"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        uploads = serializer.save()
+        
+        # Return list of created uploads
+        upload_serializer = StoreProductCodeUploadSerializer(uploads, many=True, context={'request': request})
+        
+        return Response({
+            'message': f'تم رفع {len(uploads)} ملف بنجاح',
+            'uploads': upload_serializer.data
+        }, status=201)
+
+
+class StoreProductCodeUploadProgressAPIView(RetrieveAPIView):
+    """
+    API view for getting upload progress
+    """
+    serializer_class = UploadProgressSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    queryset = StoreProductCodeUpload.objects.all()
+    
+    def get_queryset(self):
+        """Filter based on user permissions"""
+        queryset = super().get_queryset()
+        
+        # Filter by user if not staff
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        
+        return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Return upload progress information"""
+        upload = self.get_object()
+        
+        progress = 0
+        if upload.status == 'completed':
+            progress = 100
+        elif upload.status == 'processing':
+            progress = 50  # You can implement more sophisticated progress tracking
+        elif upload.status == 'failed':
+            progress = 0
+        
+        data = {
+            'status': upload.status,
+            'progress': progress,
+            'total_rows': upload.total_rows,
+            'successful_rows': upload.successful_rows,
+            'failed_rows': upload.failed_rows,
+            'success_rate': upload.success_rate,
+            'error_log': upload.error_log or ''
+        }
+        
+        serializer = self.get_serializer(data)
+        return Response(serializer.data)
+
+
+class StoreProductCodeUploadRetryAPIView(UpdateAPIView):
+    """
+    API view for retrying failed uploads
+    """
+    serializer_class = StoreProductCodeUploadSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    queryset = StoreProductCodeUpload.objects.all()
+    
+    def get_queryset(self):
+        """Filter based on user permissions"""
+        queryset = super().get_queryset()
+        
+        # Filter by user if not staff
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(uploaded_by=self.request.user)
+        
+        return queryset
+    
+    def update(self, request, *args, **kwargs):
+        """Retry upload processing"""
+        upload = self.get_object()
+        
+        if upload.status not in ['failed', 'pending']:
+            return Response(
+                {'error': 'لا يمكن إعادة معالجة هذا الرفع'},
+                status=400
+            )
+        
+        try:
+            # Reset upload status
+            upload.status = 'pending'
+            upload.error_log = ''
+            upload.save()
+            
+            # Start processing again
+            from .tasks import process_upload_file
+            process_upload_file.delay(upload.id)
+            
+            serializer = self.get_serializer(upload)
+            return Response({
+                'message': 'تم بدء إعادة معالجة الملف',
+                'upload': serializer.data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'حدث خطأ: {str(e)}'},
+                status=500
+            )
+
+
+class StoreListAPIView(ListAPIView):
+    """
+    API view for listing stores
+    """
+    serializer_class = StoreSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    queryset = Store.objects.all()
+
+
+class StoreProductCodeUploadStatisticsAPIView(ListAPIView):
+    """
+    API view for getting upload statistics
+    """
+    permission_classes = [AllAuthenticatedUsers]
+    
+    def list(self, request, *args, **kwargs):
+        """Return upload statistics"""
+        queryset = StoreProductCodeUpload.objects.all()
+        
+        # Filter by user if not staff
+        if not request.user.is_staff:
+            queryset = queryset.filter(uploaded_by=request.user)
+        
+        # Apply filters
+        status = request.query_params.get('status')
+        store_id = request.query_params.get('store')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        if store_id:
+            queryset = queryset.filter(store_id=store_id)
+        
+        if date_from:
+            queryset = queryset.filter(uploaded_at__date__gte=date_from)
+        
+        if date_to:
+            queryset = queryset.filter(uploaded_at__date__lte=date_to)
+        
+        # Calculate statistics
+        total_uploads = queryset.count()
+        completed_uploads = queryset.filter(status='completed').count()
+        failed_uploads = queryset.filter(status='failed').count()
+        pending_uploads = queryset.filter(status__in=['pending', 'processing']).count()
+        
+        # Calculate average success rate
+        completed_with_stats = queryset.filter(status='completed', total_rows__gt=0)
+        if completed_with_stats.exists():
+            avg_success_rate = sum(upload.success_rate for upload in completed_with_stats) / completed_with_stats.count()
+        else:
+            avg_success_rate = 0
+        
+        return Response({
+            'total_uploads': total_uploads,
+            'completed_uploads': completed_uploads,
+            'failed_uploads': failed_uploads,
+            'pending_uploads': pending_uploads,
+            'average_success_rate': round(avg_success_rate, 2)
+        })

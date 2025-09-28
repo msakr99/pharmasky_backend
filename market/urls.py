@@ -1,6 +1,70 @@
 from django.urls import path
 from market import views, filter_views
 from django.conf import settings
+from django.http import HttpResponse
+import pandas as pd
+import io
+
+
+def download_sample_file():
+    """Generate and return a sample Excel file for upload"""
+    # Create sample data
+    sample_data = {
+        'product_name': [
+            'باراسيتامول 500 مجم',
+            'أموكسيسيلين 250 مجم',
+            'إيبوبروفين 400 مجم',
+            'أوميبرازول 20 مجم',
+            'فيتامين د3 1000 وحدة'
+        ],
+        'code': [
+            1001,
+            1002,
+            1003,
+            1004,
+            1005
+        ],
+        'product_id': [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        'notes': [
+            'مسكن للآلام',
+            'مضاد حيوي',
+            'مضاد للالتهاب',
+            'مثبط مضخة البروتون',
+            'مكمل غذائي'
+        ],
+        'price': [
+            15.50,
+            25.00,
+            18.75,
+            35.00,
+            45.00
+        ]
+    }
+    
+    # Create DataFrame
+    df = pd.DataFrame(sample_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Store Product Codes', index=False)
+    
+    output.seek(0)
+    
+    # Create HTTP response
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="sample_store_product_codes.xlsx"'
+    
+    return response
 
 app_name = "market"
 
@@ -59,6 +123,53 @@ urlpatterns = [
         "user/product-wishlist/create/",
         views.UserPharmacyProductWishListCreateAPIView.as_view(),
         name="user-product-wishlist-create-view",
+    ),
+    
+    # Store Product Code Upload API URLs
+    path(
+        "store-product-code-uploads/",
+        views.StoreProductCodeUploadListAPIView.as_view(),
+        name="store-product-code-uploads-list",
+    ),
+    path(
+        "store-product-code-uploads/create/",
+        views.StoreProductCodeUploadCreateAPIView.as_view(),
+        name="store-product-code-uploads-create",
+    ),
+    path(
+        "store-product-code-uploads/bulk/",
+        views.BulkStoreProductCodeUploadCreateAPIView.as_view(),
+        name="store-product-code-uploads-bulk",
+    ),
+    path(
+        "store-product-code-uploads/<int:pk>/",
+        views.StoreProductCodeUploadRetrieveAPIView.as_view(),
+        name="store-product-code-uploads-detail",
+    ),
+    path(
+        "store-product-code-uploads/<int:pk>/progress/",
+        views.StoreProductCodeUploadProgressAPIView.as_view(),
+        name="store-product-code-uploads-progress",
+    ),
+    path(
+        "store-product-code-uploads/<int:pk>/retry/",
+        views.StoreProductCodeUploadRetryAPIView.as_view(),
+        name="store-product-code-uploads-retry",
+    ),
+    path(
+        "store-product-code-uploads/statistics/",
+        views.StoreProductCodeUploadStatisticsAPIView.as_view(),
+        name="store-product-code-uploads-statistics",
+    ),
+    path(
+        "stores/",
+        views.StoreListAPIView.as_view(),
+        name="stores-list",
+    ),
+    path(
+        "upload/sample/",
+        lambda request: download_sample_file(),
+        name="download_sample",
     ),
 ]
 

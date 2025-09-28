@@ -3,6 +3,7 @@ from accounts.models import Pharmacy, Store
 from django.utils.translation import gettext_lazy as _
 from market import managers
 from market.choices import SHAPE_CHOICES, LETTER_CHOICES, UPLOAD_STATUS_CHOICES, ACTION_CHOICES
+from market.validators import StoreProductCodeFileValidator, ProductMatchCacheValidator, store_product_code_file_validator
 
 
 class Company(models.Model):
@@ -125,10 +126,25 @@ class CodeChangeLog(models.Model):
     class Meta:
         ordering = ['-changed_at']
 
+
 class StoreProductCodeUpload(models.Model):
-    
-    store = models.ForeignKey(Store, on_delete=models.CASCADE)
-    file = models.FileField(upload_to='uploads/store_product_codes/')
+    store = models.ForeignKey(
+        Store, 
+        on_delete=models.CASCADE,
+        related_name='product_code_uploads',
+        related_query_name='product_code_uploads'
+    )
+    file = models.FileField(
+        upload_to='uploads/store_product_codes/',
+        validators=[store_product_code_file_validator]
+    )
+    uploaded_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uploaded_product_codes'
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=UPLOAD_STATUS_CHOICES, default='pending')
@@ -137,22 +153,88 @@ class StoreProductCodeUpload(models.Model):
     failed_rows = models.IntegerField(default=0)
     results = models.JSONField(default=dict, blank=True)
     error_log = models.TextField(blank=True)
+    file_size = models.BigIntegerField(null=True, blank=True, help_text="File size in bytes")
+    file_name = models.CharField(max_length=255, blank=True, help_text="Original file name")
     
     class Meta:
         ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['store', 'status']),
+            models.Index(fields=['uploaded_at']),
+            models.Index(fields=['status']),
+        ]
+        verbose_name = "Store Product Code Upload"
+        verbose_name_plural = "Store Product Code Uploads"
+    
+    def __str__(self):
+        return f"{self.store.name} - {self.file_name} - {self.status}"
+    
+    @property
+    def success_rate(self):
+        """Calculate success rate percentage"""
+        if self.total_rows == 0:
+            return 0
+        return round((self.successful_rows / self.total_rows) * 100, 2)
+    
+    def clean(self):
+        """Validate the model instance"""
+        super().clean()
+        
+        # Validate file if it exists
+        if self.file:
+            validator = StoreProductCodeFileValidator()
+            validator(self.file)
+    
+    def save(self, *args, **kwargs):
+        # Auto-calculate file size and name if not provided
+        if self.file and not self.file_size:
+            try:
+                self.file_size = self.file.size
+            except (OSError, ValueError):
+                pass
+        
+        if self.file and not self.file_name:
+            self.file_name = self.file.name
+        
+        # Run validation
+        self.clean()
+        
+        super().save(*args, **kwargs)
+
 
 class ProductMatchCache(models.Model):
     search_name = models.CharField(max_length=200, db_index=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    confidence_score = models.FloatField()
+    product = models.ForeignKey(
+        Product, 
+        on_delete=models.CASCADE,
+        related_name='match_cache_entries',
+        related_query_name='match_cache_entries'
+    )
+    confidence_score = models.FloatField(validators=[ProductMatchCacheValidator.validate_confidence_score])
     created_at = models.DateTimeField(auto_now_add=True)
+    last_accessed = models.DateTimeField(auto_now=True, help_text="Last time this cache entry was used")
+    access_count = models.PositiveIntegerField(default=0, help_text="Number of times this cache was accessed")
     
     class Meta:
         indexes = [
             models.Index(fields=['search_name']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['confidence_score']),
+            models.Index(fields=['last_accessed']),
         ]
         unique_together = (('search_name', 'product'),)
+        verbose_name = "Product Match Cache"
+        verbose_name_plural = "Product Match Caches"
+        ordering = ['-confidence_score', '-created_at']
+    
+    def __str__(self):
+        return f"{self.search_name} -> {self.product.name} ({self.confidence_score:.2f})"
+    
+    def increment_access(self):
+        """Increment access count and update last_accessed"""
+        self.access_count += 1
+        self.save(update_fields=['access_count', 'last_accessed'])
+
 
 class PharmacyProductWishList(models.Model):
     pharmacy = models.ForeignKey(
