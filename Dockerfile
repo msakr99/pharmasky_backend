@@ -35,8 +35,7 @@ RUN mkdir -p /app/staticfiles
 RUN mkdir -p /app/media
 RUN mkdir -p /app/logs
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Static files will be collected at runtime
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser
