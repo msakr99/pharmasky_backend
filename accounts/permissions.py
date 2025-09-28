@@ -11,6 +11,10 @@ class BaseRoleAuthentication(IsAuthenticated):
         authenticated = super().has_permission(request, view)
         user = request.user
 
+        # ADMIN users should have access to everything
+        if authenticated and user.role == Role.ADMIN:
+            return True
+
         if isinstance(self.base_role, list):
             return bool(authenticated and (user.role in self.base_role or user.is_superuser))
 
@@ -43,6 +47,10 @@ class DataEntryRoleAuthentication(BaseRoleAuthentication):
 
 class DeliveryRoleAuthentication(BaseRoleAuthentication):
     base_role = Role.DELIVERY
+
+
+class AdminRoleAuthentication(BaseRoleAuthentication):
+    base_role = Role.ADMIN
 
 
 class StaffRoleAuthentication(BaseRoleAuthentication):
