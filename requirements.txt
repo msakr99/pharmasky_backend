@@ -12,7 +12,7 @@ django-rosetta
 django-import-export
 drf-spectacular
 django-celery-beat
-django-push-notifications
+# django-push-notifications
 celery
 redis
 psycopg2-binary
