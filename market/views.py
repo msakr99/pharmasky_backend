@@ -17,6 +17,8 @@ from rest_framework.generics import (
     DestroyAPIView,
     UpdateAPIView,
 )
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 
 from core.permissions import AllAuthenticatedUsers, SmartRolePermission
@@ -86,7 +88,8 @@ class ProductListAPIView(ListAPIView):
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
-    search_fields = ["name", "e_name"]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["name", "e_name", "company__name", "effective_material"]
     ordering_fields = [
         "id",
         "name",
@@ -106,6 +109,17 @@ class ProductListAPIView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         queryset = Product.objects.with_has_image().all()
+
+        # البحث اليدوي كبديل
+        search_term = self.request.GET.get('search')
+        if search_term:
+            from django.db import models
+            queryset = queryset.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(e_name__icontains=search_term) |
+                models.Q(company__name__icontains=search_term) |
+                models.Q(effective_material__icontains=search_term)
+            )
 
         if user.role == Role.PHARMACY:
             try:
