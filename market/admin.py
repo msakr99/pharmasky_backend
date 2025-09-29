@@ -225,8 +225,11 @@ class StoreProductCodeUploadAdmin(admin.ModelAdmin):
         """Display success rate with color coding"""
         if obj is None:
             return "N/A"
-
         rate = obj.success_rate
+        try:
+            rate_float = float(rate)
+        except (TypeError, ValueError):
+            return "N/A"
         if rate >= 90:
             color = 'green'
         elif rate >= 70:
@@ -235,8 +238,8 @@ class StoreProductCodeUploadAdmin(admin.ModelAdmin):
             color = 'red'
         
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-            color, rate
+            '<span style="color: {}; font-weight: bold;">{}%</span>',
+            color, f"{rate_float:.1f}"
         )
     success_rate_display.short_description = 'Success Rate'
     success_rate_display.admin_order_field = 'successful_rows'
