@@ -13,8 +13,8 @@ class StoreProductCodeFileValidator:
     
     ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.csv']
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    REQUIRED_COLUMNS = ['product_name', 'code']  # Adjust based on your requirements
-    OPTIONAL_COLUMNS = ['product_id', 'notes', 'price']
+    REQUIRED_COLUMNS = ['product_name', 'code']  # Required columns
+    OPTIONAL_COLUMNS = ['product_id', 'notes', 'price']  # Optional columns for enhanced validation
     
     def __init__(self, max_size=None, allowed_extensions=None):
         self.max_size = max_size or self.MAX_FILE_SIZE
@@ -135,6 +135,21 @@ class StoreProductCodeFileValidator:
                     params={'rows': ', '.join(map(str, invalid_codes.index + 2))},
                     code='invalid_code_format'
                 )
+        
+        # Validate price format (if present, should be numeric)
+        if 'price' in df.columns:
+            # Remove empty values first
+            price_series = df['price'].dropna()
+            if not price_series.empty:
+                # Convert to string and check if numeric
+                price_str = price_series.astype(str)
+                invalid_prices = price_series[~price_str.str.replace('.', '').str.replace('-', '').str.isdigit()]
+                if not invalid_prices.empty:
+                    raise ValidationError(
+                        _('Invalid price format in rows: %(rows)s. Prices must be numeric.'),
+                        params={'rows': ', '.join(map(str, invalid_prices.index + 2))},
+                        code='invalid_price_format'
+                    )
         
         # Check for empty required fields
         for column in self.REQUIRED_COLUMNS:

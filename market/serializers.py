@@ -180,6 +180,8 @@ class StoreProductCodeUploadSerializer(BaseModelSerializer):
     success_rate = serializers.ReadOnlyField()
     file_size_display = serializers.SerializerMethodField()
     file_name = serializers.CharField(read_only=True)
+    results_summary = serializers.SerializerMethodField()
+    flexibility_used = serializers.SerializerMethodField()
     
     class Meta:
         model = StoreProductCodeUpload
@@ -201,6 +203,8 @@ class StoreProductCodeUploadSerializer(BaseModelSerializer):
             'failed_rows',
             'success_rate',
             'results',
+            'results_summary',
+            'flexibility_used',
             'error_log'
         ]
         read_only_fields = [
@@ -224,6 +228,39 @@ class StoreProductCodeUploadSerializer(BaseModelSerializer):
             return None
         size_mb = obj.file_size / (1024 * 1024)
         return f"{size_mb:.2f} MB"
+    
+    def get_results_summary(self, obj):
+        """Return summary of processing results"""
+        if not obj.results:
+            return {}
+        
+        summary = {
+            'total_rows': len(obj.results),
+            'successful': len([r for r in obj.results if r.get('status') == 'success']),
+            'failed': len([r for r in obj.results if r.get('status') == 'failed']),
+            'flexible_matches': len([r for r in obj.results if r.get('flexibility_used', False)]),
+            'average_match_score': 0,
+            'price_differences': []
+        }
+        
+        # Calculate average match score for successful matches
+        successful_results = [r for r in obj.results if r.get('status') == 'success']
+        if successful_results:
+            scores = [r.get('match_score', 1.0) for r in successful_results]
+            summary['average_match_score'] = round(sum(scores) / len(scores), 2)
+            
+            # Collect price differences
+            price_diffs = [r.get('price_difference', 0) for r in successful_results if r.get('price_difference', 0) > 0]
+            summary['price_differences'] = price_diffs
+        
+        return summary
+    
+    def get_flexibility_used(self, obj):
+        """Check if flexibility was used in any matches"""
+        if not obj.results:
+            return False
+        
+        return any(r.get('flexibility_used', False) for r in obj.results)
     
     def create(self, validated_data):
         """Create upload record and start processing"""
