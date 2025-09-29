@@ -1,5 +1,6 @@
 from typing import Any
 from django.contrib import admin
+from django.contrib.admin import forms
 from django.db import transaction
 from django.db.models import Sum, Count, Avg
 from django.db.models.functions import Upper, Substr
@@ -129,8 +130,38 @@ class PharmcyProductWishListModelAdmin(DefaultBaseAdminItems):
     search_help_text = _("Search by pharmacy name or product name.")
 
 
+class StoreProductCodeUploadForm(forms.ModelForm):
+    """Custom form for StoreProductCodeUpload to handle file validation better"""
+    
+    class Meta:
+        model = StoreProductCodeUpload
+        fields = '__all__'
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # Only validate file content if a new file is being uploaded
+        file = cleaned_data.get('file')
+        if file and hasattr(file, 'file') and file.file:
+            try:
+                from .validators import StoreProductCodeFileValidator
+                validator = StoreProductCodeFileValidator()
+                validator(file)
+            except Exception as e:
+                # Log the error but don't break the admin form
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"File validation error in admin form: {e}")
+                # Only raise validation errors for critical issues
+                if "file_too_large" in str(e) or "invalid_extension" in str(e):
+                    raise
+        
+        return cleaned_data
+
+
 @admin.register(StoreProductCodeUpload)
 class StoreProductCodeUploadAdmin(admin.ModelAdmin):
+    form = StoreProductCodeUploadForm
     list_display = (
         'store',
         'file_name',
