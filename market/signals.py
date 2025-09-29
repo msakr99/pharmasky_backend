@@ -18,8 +18,12 @@ def handle_upload_status_change(sender, instance, created, **kwargs):
         logger.info(f"New upload created: {instance.id} for store {instance.store.name}")
         
         # Start processing the file asynchronously
-        from .tasks import process_upload_file
-        process_upload_file.delay(instance.id)
+        try:
+            from .tasks import process_upload_file
+            process_upload_file.delay(instance.id)
+        except Exception as e:
+            # Do not crash admin if broker is down
+            logger.error(f"Failed to enqueue upload processing task for upload {instance.id}: {e}")
         
     else:
         # Upload status changed
@@ -144,8 +148,11 @@ def schedule_cache_cleanup(sender, instance, created, **kwargs):
         
         # If cache has more than 10000 entries, schedule cleanup
         if cache_count > 10000:
-            from .tasks import cleanup_old_product_match_cache
-            cleanup_old_product_match_cache.delay(days_old=7)  # Clean entries older than 7 days
+            try:
+                from .tasks import cleanup_old_product_match_cache
+                cleanup_old_product_match_cache.delay(days_old=7)  # Clean entries older than 7 days
+            except Exception as e:
+                logger.error(f"Failed to enqueue cache cleanup task: {e}")
             logger.info(f"Cache cleanup scheduled due to large cache size: {cache_count} entries")
 
 
