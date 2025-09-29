@@ -86,7 +86,7 @@ class ProductListAPIView(ListAPIView):
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
-    search_fields = ["^name", "^e_name"]
+    search_fields = ["name", "e_name"]
     ordering_fields = [
         "id",
         "name",
@@ -145,7 +145,7 @@ class ProductAlternativeListAPIView(ListAPIView):
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
     lookup_field = "pk"
-    search_fields = ["^name", "^e_name"]
+    search_fields = ["name", "e_name"]
     ordering_fields = [
         "id",
         "name",
@@ -180,7 +180,7 @@ class ProductInstanceListAPIView(ListAPIView):
     serializer_class = ProductReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = ProductFilter
-    search_fields = ["^name", "^e_name"]
+    search_fields = ["name", "e_name"]
     ordering_fields = ["id", "name", "e_name"]
     ordering = ["name"]
 
