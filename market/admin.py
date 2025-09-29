@@ -1,6 +1,6 @@
 from typing import Any
 from django.contrib import admin
-from django.contrib.admin import forms
+from django import forms
 from django.db import transaction
 from django.db.models import Sum, Count, Avg
 from django.db.models.functions import Upper, Substr
