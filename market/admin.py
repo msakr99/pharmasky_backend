@@ -223,6 +223,9 @@ class StoreProductCodeUploadAdmin(admin.ModelAdmin):
     
     def success_rate_display(self, obj):
         """Display success rate with color coding"""
+        if obj is None:
+            return "N/A"
+
         rate = obj.success_rate
         if rate >= 90:
             color = 'green'
@@ -240,6 +243,9 @@ class StoreProductCodeUploadAdmin(admin.ModelAdmin):
     
     def file_size_display(self, obj):
         """Display file size in human readable format"""
+        if obj is None:
+            return 'N/A'
+
         if not obj.file_size:
             return 'N/A'
         
@@ -249,6 +255,9 @@ class StoreProductCodeUploadAdmin(admin.ModelAdmin):
     
     def error_log_display(self, obj):
         """Display error log in a formatted way"""
+        if obj is None:
+            return 'No errors'
+
         if not obj.error_log:
             return 'No errors'
         
