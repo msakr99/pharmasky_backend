@@ -21,9 +21,12 @@ def search_smart_split(search_terms):
 class CustomSearchFilter(SearchFilter):
     def get_search_terms(self, request):
         value = request.query_params.get(self.search_param, "")
+        if not value:
+            return []
         field = CharField(trim_whitespace=False, allow_blank=True)
         cleaned_value = field.run_validation(value)
-        return [cleaned_value]
+        # Split the search term into individual words for better search
+        return [term.strip() for term in cleaned_value.split() if term.strip()]
 
 
 class ListIDFilter(filters.Filter):
