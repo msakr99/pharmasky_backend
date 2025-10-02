@@ -1,6 +1,7 @@
 from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView
+from rest_framework.response import Response
 from profiles.models import Area, Complaint, Country, City, PaymentPeriod, UserProfile
 from profiles.serializers import (
     AreaReadSerializer,
@@ -47,6 +48,25 @@ class UserProfileListAPIView(ListAPIView):
         return queryset
 
 
+class StoreProfilesListAPIView(ListAPIView):
+    """
+    API View to get all profiles where user role is STORE
+    """
+    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    serializer_class = UserProfileReadSerializer
+    search_fields = ["user__name", "user__e_name", "user__username", "address", "key_person"]
+    ordering_fields = ["user__name", "user__e_name", "category", "latest_invoice_date"]
+    ordering = ["-latest_invoice_date"]
+
+    def get_queryset(self):
+        queryset = UserProfile.objects.select_related(
+            "user", "city", "city__country", "payment_period", 
+            "data_entry", "sales", "manager", "area_manager", "delivery"
+        ).filter(user__role=Role.STORE)
+
+        return queryset
+
+
 class UserProfileRetrieveAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileReadSerializer
@@ -56,8 +76,21 @@ class UserProfileRetrieveAPIView(RetrieveAPIView):
         return queryset
 
     def get_object(self):
-        obj = get_object_or_404(self.get_queryset(), user=self.request.user)
-        return obj
+        try:
+            obj = self.get_queryset().get(user=self.request.user)
+            return obj
+        except UserProfile.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj is None:
+            return Response(
+                {"detail": "User profile not found. Please create a profile first."},
+                status=404
+            )
+        serializer = self.get_serializer(obj)
+        return Response(serializer.data)
 
     def get_serializer(self, *args, **kwargs):
         kwargs.update({"exclude": ["data_entry", "sales", "delivery", "manager", "area_manager"]})

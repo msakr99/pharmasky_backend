@@ -10,6 +10,11 @@ urlpatterns = [
         name="user-profiles-list-view",
     ),
     path(
+        "store-profiles/",
+        views.StoreProfilesListAPIView.as_view(),
+        name="store-profiles-list-view",
+    ),
+    path(
         "user-profiles/create/",
         views.UserProfileCreateAPIView.as_view(),
         name="user-profiles-create-view",
