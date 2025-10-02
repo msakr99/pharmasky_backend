@@ -19,8 +19,8 @@ class UserProfileListAPIView(ListAPIView):
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication | StoreRoleAuthentication]
     serializer_class = UserProfileReadSerializer
     search_fields = ["user__name", "user__e_name", "user__username", "address", "key_person"]
-    ordering_fields = ["user__name", "user__e_name", "category", "latest_invoice_date", "created_at"]
-    ordering = ["-created_at"]
+    ordering_fields = ["user__name", "user__e_name", "category", "latest_invoice_date"]
+    ordering = ["-latest_invoice_date"]
 
     def get_queryset(self):
         user = self.request.user

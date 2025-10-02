@@ -36,6 +36,7 @@ class UserProfileModelAdmin(DefaultBaseAdminItems):
         "user",
         "sales",
         "data_entry",
+        "manager",
         "area_manager",
         "delivery",
         "profit_percentage",
@@ -47,5 +48,5 @@ class UserProfileModelAdmin(DefaultBaseAdminItems):
     date_hierarchy = "latest_invoice_date"
     search_fields = ["user__username", "user__name"]
     list_filter = ["order_by_phone", "company", "category", "city", "city__country"]
-    list_select_related = ["user", "data_entry", "sales", "city"]
+    list_select_related = ["user", "data_entry", "sales", "manager", "area_manager", "delivery", "city"]
     autocomplete_fields = ["user", "manager", "area_manager", "data_entry", "sales", "delivery", "city"]
