@@ -2,6 +2,7 @@ from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView, RetrieveAPIView
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from profiles.models import Area, Complaint, Country, City, PaymentPeriod, UserProfile
 from profiles.serializers import (
     AreaReadSerializer,
@@ -19,6 +20,8 @@ from accounts.permissions import *
 class UserProfileListAPIView(ListAPIView):
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication | StoreRoleAuthentication]
     serializer_class = UserProfileReadSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["user__role", "category", "city", "city__country"]
     search_fields = ["user__name", "user__e_name", "user__username", "address", "key_person"]
     ordering_fields = ["user__name", "user__e_name", "category", "latest_invoice_date"]
     ordering = ["-latest_invoice_date"]
