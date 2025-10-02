@@ -36,10 +36,13 @@ class PaymentPeriodReadSerializer(BaseModelSerializer):
 
 class UserProfileReadSerializer(BaseModelSerializer):
     class UserSubReadSerializer(BaseModelSerializer):
+        role_label = serializers.CharField(source="get_role_display", read_only=True)
+        
         class Meta:
             model = get_user_model()
-            fields = ["id", "name", "e_name", "username"]
+            fields = ["id", "name", "e_name", "username", "role", "role_label"]
 
+    user = UserSubReadSerializer()
     data_entry = UserSubReadSerializer()
     sales = UserSubReadSerializer()
     manager = UserSubReadSerializer()
@@ -53,6 +56,7 @@ class UserProfileReadSerializer(BaseModelSerializer):
         model = UserProfile
         fields = [
             "id",
+            "user",
             "data_entry",
             "sales",
             "manager",
