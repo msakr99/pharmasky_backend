@@ -15,6 +15,38 @@ from profiles.serializers import (
 from accounts.permissions import *
 
 
+class UserProfileListAPIView(ListAPIView):
+    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication | StoreRoleAuthentication]
+    serializer_class = UserProfileReadSerializer
+    search_fields = ["user__name", "user__e_name", "user__username", "address", "key_person"]
+    ordering_fields = ["user__name", "user__e_name", "category", "latest_invoice_date", "created_at"]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = UserProfile.objects.select_related(
+            "user", "city", "city__country", "payment_period", 
+            "data_entry", "sales", "manager", "area_manager", "delivery"
+        ).all()
+
+        if user.is_superuser:
+            return queryset
+
+        match user.role:
+            case Role.MANAGER:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(manager=user))
+            case Role.AREA_MANAGER:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(area_manager=user))
+            case Role.SALES:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(sales=user))
+            case Role.STORE:
+                queryset = queryset.filter(user=user)
+            case _r:
+                queryset = queryset.none()
+
+        return queryset
+
+
 class UserProfileRetrieveAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileReadSerializer

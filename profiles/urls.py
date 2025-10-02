@@ -5,6 +5,11 @@ app_name = "profiles"
 
 urlpatterns = [
     path(
+        "user-profiles/",
+        views.UserProfileListAPIView.as_view(),
+        name="user-profiles-list-view",
+    ),
+    path(
         "user-profiles/create/",
         views.UserProfileCreateAPIView.as_view(),
         name="user-profiles-create-view",
