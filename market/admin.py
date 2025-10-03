@@ -85,7 +85,7 @@ class ProductModelAdmin(DefaultBaseAdminItems):
 
 
 @admin.register(StoreProductCode)
-class StoreProductCodeModelAdmin(DefaultBaseAdminItems):
+class StoreProductCodeModelAdmin(admin.ModelAdmin):
     
     def changelist_view(self, request, extra_context=None):
         try:
@@ -104,8 +104,9 @@ class StoreProductCodeModelAdmin(DefaultBaseAdminItems):
         "updated_at",
     )
     list_filter = ("store", "is_active")
-    search_fields = ("code", "product__name", "store__name")
+    search_fields = ("code", "product__name", "store__name", "id")
     list_select_related = ("product", "store")
+    readonly_fields = ("id",)
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('product', 'store')
