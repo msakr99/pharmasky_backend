@@ -86,13 +86,29 @@ class ProductModelAdmin(DefaultBaseAdminItems):
 
 @admin.register(StoreProductCode)
 class StoreProductCodeModelAdmin(DefaultBaseAdminItems):
+    
+    def changelist_view(self, request, extra_context=None):
+        try:
+            return super().changelist_view(request, extra_context)
+        except Exception as e:
+            print(f"Error in StoreProductCode admin: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
     list_display = (
         "product",
         "store", 
         "code",
+        "is_active",
+        "updated_at",
     )
-    list_filter = ("store",)
-    search_fields = ("code",)
+    list_filter = ("store", "is_active")
+    search_fields = ("code", "product__name", "store__name")
+    list_select_related = ("product", "store")
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('product', 'store')
 
 
 @admin.register(ProductCode)
