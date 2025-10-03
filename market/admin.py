@@ -88,16 +88,11 @@ class ProductModelAdmin(DefaultBaseAdminItems):
 class StoreProductCodeModelAdmin(DefaultBaseAdminItems):
     list_display = (
         "product",
-        "store",
+        "store", 
         "code",
-        "is_active",
-        "created_at",
     )
-    list_filter = ("store", "is_active", "created_at")
-    search_fields = ("code", "product__name", "store__name")
-    search_help_text = _("Search by code, product name or store name.")
-    list_select_related = ("product", "store")
-    raw_id_fields = ("product", "store")
+    list_filter = ("store",)
+    search_fields = ("code",)
 
 
 @admin.register(ProductCode)
