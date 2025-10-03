@@ -29,5 +29,5 @@ class InventoryItemModelAdmin(DefaultBaseAdminItems):
     search_fields = ("product__name",)
     date_hierarchy = "product_expiry_date"
     list_filter = ("inventory", "inventory__type")
-    # autocomplete_fields = ("inventory", "product", "purchase_invoice_item")
+    autocomplete_fields = ("inventory", "product")
     list_select_related = ("inventory", "product")

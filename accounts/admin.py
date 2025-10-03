@@ -83,5 +83,4 @@ class UserModelAdmin(ImportExportMixin, UserAdmin):
     )
     add_form = BaseUserCreationForm
     form = UserChangeForm
-    list_filter = ("role", "is_active", "is_superuser", "is_staff")
     actions = [activate_users, deactivate_users, create_carts, create_accounts]
