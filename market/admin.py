@@ -39,7 +39,9 @@ class StoreProductCodeResource(resources.ModelResource):
             'updated_at'
         )
         export_order = fields
-        import_id_fields = ['product', 'store']
+        import_id_fields = ['product__name', 'store__name']
+        skip_unchanged = True
+        report_skipped = True
         
     def before_import_row(self, row, **kwargs):
         """Custom logic before importing each row"""
@@ -50,10 +52,10 @@ class StoreProductCodeResource(resources.ModelResource):
         """Custom logic after importing each row"""
         if row_result.import_type == row_result.IMPORT_TYPE_NEW:
             # Log new imports
-            print(f"Imported new StoreProductCode: {row['code']}")
+            print(f"Imported new StoreProductCode: {row.get('code', 'N/A')}")
         elif row_result.import_type == row_result.IMPORT_TYPE_UPDATE:
             # Log updates
-            print(f"Updated StoreProductCode: {row['code']}")
+            print(f"Updated StoreProductCode: {row.get('code', 'N/A')}")
 
 
 @admin.register(Company)
@@ -129,8 +131,26 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
     
     resource_class = StoreProductCodeResource
     
+    # Import/Export permissions
+    def has_import_permission(self, request):
+        # Allow import for superusers or users with add permission
+        return request.user.is_superuser or request.user.has_perm('market.add_storeproductcode')
+    
+    def has_export_permission(self, request):
+        # Allow export for superusers or users with view permission
+        return request.user.is_superuser or request.user.has_perm('market.view_storeproductcode')
+    
     def changelist_view(self, request, extra_context=None):
         try:
+            # Add debug info
+            if extra_context is None:
+                extra_context = {}
+            extra_context['has_import_permission'] = self.has_import_permission(request)
+            extra_context['has_export_permission'] = self.has_export_permission(request)
+            print(f"DEBUG: has_import_permission = {extra_context['has_import_permission']}")
+            print(f"DEBUG: has_export_permission = {extra_context['has_export_permission']}")
+            print(f"DEBUG: user = {request.user}")
+            print(f"DEBUG: user.is_superuser = {request.user.is_superuser}")
             return super().changelist_view(request, extra_context)
         except Exception as e:
             print(f"Error in StoreProductCode admin: {e}")
@@ -151,8 +171,15 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
     readonly_fields = ("id", "created_at", "updated_at")
     
     # Import/Export settings
-    import_template_name = 'admin/import_export/import.html'
-    export_template_name = 'admin/import_export/export.html'
+    import_template_name = 'admin/market/storeproductcode/import.html'
+    export_template_name = 'admin/market/storeproductcode/export.html'
+    
+    # Ensure import/export URLs are available
+    def get_import_url(self):
+        return f"../{self.model._meta.app_label}/{self.model._meta.model_name}/import/"
+    
+    def get_export_url(self):
+        return f"../{self.model._meta.app_label}/{self.model._meta.model_name}/export/"
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
@@ -172,6 +199,21 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
             'request': request,
             'user': request.user,
         }
+    
+    def get_import_resource_kwargs(self, request, **kwargs):
+        """Customize import resource kwargs"""
+        return {
+            'request': request,
+            'user': request.user,
+        }
+    
+    def get_import_resource_class(self):
+        """Return the resource class for import"""
+        return StoreProductCodeResource
+    
+    def get_export_resource_class(self):
+        """Return the resource class for export"""
+        return StoreProductCodeResource
     
     def get_urls(self):
         """Add custom URLs for template download"""

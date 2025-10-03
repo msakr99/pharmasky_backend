@@ -11,14 +11,14 @@
     {% endif %}
     {% if has_import_permission %}
         <li>
-            <a href="{% url opts|admin_urlname:'import' %}" class="import_link" style="background: #28a745; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none;">
+            <a href="../{{ opts.app_label }}/{{ opts.model_name }}/import/" class="import_link" style="background: #28a745; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none;">
                 📥 {% trans "Import" %}
             </a>
         </li>
     {% endif %}
     {% if has_export_permission %}
         <li>
-            <a href="{% url opts|admin_urlname:'export' %}" class="export_link" style="background: #007bff; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none;">
+            <a href="../{{ opts.app_label }}/{{ opts.model_name }}/export/" class="export_link" style="background: #007bff; color: white; padding: 8px 12px; border-radius: 4px; text-decoration: none;">
                 📤 {% trans "Export" %}
             </a>
         </li>

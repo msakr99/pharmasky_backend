@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Export Store Product Codes" %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label='market' %}">Market</a>
+&rsaquo; <a href="../storeproductcode/">Store Product Codes</a>
+&rsaquo; {% trans 'Export' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{% trans "Export Store Product Codes" %}</h1>
+
+<div class="module aligned">
+    <h2>{% trans "Export Data" %}</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <div>
+                    <label for="id_format">{% trans "Export format" %}:</label>
+                    <select name="format" id="id_format">
+                        <option value="0">{% trans "CSV" %}</option>
+                        <option value="1">{% trans "Excel" %}</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+        
+        <div class="submit-row">
+            <input type="submit" value="{% trans 'Export' %}" class="default">
+            <a href="../storeproductcode/" class="button cancel-link">{% trans 'Cancel' %}</a>
+        </div>
+    </form>
+</div>
+
+<div class="module">
+    <h2>{% trans "Export Information" %}</h2>
+    <div class="help">
+        <p>{% trans "You can export data in the following formats:" %}</p>
+        <ul>
+            <li><strong>CSV</strong>: {% trans "Comma-separated values, compatible with Excel and other spreadsheet applications" %}</li>
+            <li><strong>Excel</strong>: {% trans "Native Excel format (.xlsx) with multiple sheets support" %}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
