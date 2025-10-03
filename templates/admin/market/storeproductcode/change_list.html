@@ -1,0 +1,35 @@
+{% extends "admin/import_export/change_list_import_export.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.import_link, .export_link {
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.import_link:hover, .export_link:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.object-tools {
+    margin-bottom: 20px;
+}
+
+.object-tools li {
+    display: inline-block;
+    margin-right: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h2>{% trans "Store Product Codes Management" %}</h2>
+    <p>{% trans "Manage product codes for different stores. You can import/export data in bulk using the buttons above." %}</p>
+</div>
+
+{{ block.super }}
+{% endblock %}

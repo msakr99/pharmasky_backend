@@ -10,11 +10,50 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.http import HttpResponse
 from django.utils import timezone
+from django.conf import settings
 import csv
 
 from core.admin.abstract_admin import DefaultBaseAdminItems
 from django.utils.translation import gettext_lazy as _
+from import_export.admin import ImportExportMixin
+from import_export import resources
 from .models import *
+
+
+class StoreProductCodeResource(resources.ModelResource):
+    """Resource for importing/exporting StoreProductCode data"""
+    
+    class Meta:
+        model = StoreProductCode
+        fields = (
+            'id',
+            'product__name',
+            'product__e_name', 
+            'product__company__name',
+            'product__category__name',
+            'store__name',
+            'store__e_name',
+            'code',
+            'is_active',
+            'created_at',
+            'updated_at'
+        )
+        export_order = fields
+        import_id_fields = ['product', 'store']
+        
+    def before_import_row(self, row, **kwargs):
+        """Custom logic before importing each row"""
+        # You can add validation or data transformation here
+        pass
+        
+    def after_import_row(self, row, row_result, **kwargs):
+        """Custom logic after importing each row"""
+        if row_result.import_type == row_result.IMPORT_TYPE_NEW:
+            # Log new imports
+            print(f"Imported new StoreProductCode: {row['code']}")
+        elif row_result.import_type == row_result.IMPORT_TYPE_UPDATE:
+            # Log updates
+            print(f"Updated StoreProductCode: {row['code']}")
 
 
 @admin.register(Company)
@@ -85,7 +124,10 @@ class ProductModelAdmin(DefaultBaseAdminItems):
 
 
 @admin.register(StoreProductCode)
-class StoreProductCodeModelAdmin(admin.ModelAdmin):
+class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
+    """Admin for StoreProductCode with Import/Export functionality"""
+    
+    resource_class = StoreProductCodeResource
     
     def changelist_view(self, request, extra_context=None):
         try:
@@ -103,13 +145,70 @@ class StoreProductCodeModelAdmin(admin.ModelAdmin):
         "is_active",
         "updated_at",
     )
-    list_filter = ("store", "is_active")
-    search_fields = ("code", "product__name", "store__name", "id")
-    list_select_related = ("product", "store")
-    readonly_fields = ("id",)
+    list_filter = ("store", "is_active", "product__company", "product__category")
+    search_fields = ("code", "product__name", "product__e_name", "store__name", "store__e_name", "id")
+    list_select_related = ("product", "product__company", "product__category", "store")
+    readonly_fields = ("id", "created_at", "updated_at")
+    
+    # Import/Export settings
+    import_template_name = 'admin/import_export/import.html'
+    export_template_name = 'admin/import_export/export.html'
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('product', 'store')
+        return super().get_queryset(request).select_related(
+            'product', 'product__company', 'product__category', 'store'
+        )
+    
+    def get_import_resource_kwargs(self, request, **kwargs):
+        """Customize import resource kwargs"""
+        return {
+            'request': request,
+            'user': request.user,
+        }
+    
+    def get_export_resource_kwargs(self, request, **kwargs):
+        """Customize export resource kwargs"""
+        return {
+            'request': request,
+            'user': request.user,
+        }
+    
+    def get_urls(self):
+        """Add custom URLs for template download"""
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('download-template/', 
+                 self.admin_site.admin_view(self.download_template_view),
+                 name='%s_%s_download_template' % (self.model._meta.app_label, self.model._meta.model_name)),
+        ]
+        return custom_urls + urls
+    
+    def download_template_view(self, request):
+        """Download CSV template for import"""
+        from django.http import HttpResponse
+        import os
+        
+        template_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 
+                                   'admin', 'templates', 'storeproductcode_template.csv')
+        
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                response = HttpResponse(f.read(), content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename="storeproductcode_template.csv"'
+                return response
+        else:
+            # Generate template dynamically
+            template_content = """product__name,product__e_name,store__name,store__e_name,code,is_active
+"أسبرين 500 مجم","Aspirin 500mg","صيدلية النور","Al-Nour Pharmacy",1001,True
+"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية النور","Al-Nour Pharmacy",1002,True
+"فيتامين سي 1000 مجم","Vitamin C 1000mg","صيدلية النور","Al-Nour Pharmacy",1003,True
+"أسبرين 500 مجم","Aspirin 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2001,True
+"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2002,True"""
+            
+            response = HttpResponse(template_content, content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="storeproductcode_template.csv"'
+            return response
 
 
 @admin.register(ProductCode)

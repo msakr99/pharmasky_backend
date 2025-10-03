@@ -1,0 +1,6 @@
+product__name,product__e_name,store__name,store__e_name,code,is_active
+"أسبرين 500 مجم","Aspirin 500mg","صيدلية النور","Al-Nour Pharmacy",1001,True
+"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية النور","Al-Nour Pharmacy",1002,True
+"فيتامين سي 1000 مجم","Vitamin C 1000mg","صيدلية النور","Al-Nour Pharmacy",1003,True
+"أسبرين 500 مجم","Aspirin 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2001,True
+"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2002,True
