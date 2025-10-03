@@ -40,11 +40,13 @@ class StoreProductCodeResource(resources.ModelResource):
         )
         export_order = fields
         import_id_fields = ['product__name', 'store__name']
-        skip_unchanged = True
+        skip_unchanged = False
         report_skipped = True
+        use_bulk = False
         
     def before_import_row(self, row, **kwargs):
         """Custom logic before importing each row"""
+        print(f"🔍 Processing row: {row}")
         # You can add validation or data transformation here
         pass
         
@@ -52,10 +54,29 @@ class StoreProductCodeResource(resources.ModelResource):
         """Custom logic after importing each row"""
         if row_result.import_type == row_result.IMPORT_TYPE_NEW:
             # Log new imports
-            print(f"Imported new StoreProductCode: {row.get('code', 'N/A')}")
+            print(f"✅ Imported new StoreProductCode: {row.get('code', 'N/A')}")
         elif row_result.import_type == row_result.IMPORT_TYPE_UPDATE:
             # Log updates
-            print(f"Updated StoreProductCode: {row.get('code', 'N/A')}")
+            print(f"🔄 Updated StoreProductCode: {row.get('code', 'N/A')}")
+        elif row_result.import_type == row_result.IMPORT_TYPE_SKIP:
+            # Log skipped
+            print(f"⏭️ Skipped StoreProductCode: {row.get('code', 'N/A')}")
+        else:
+            print(f"❌ Error importing StoreProductCode: {row.get('code', 'N/A')} - {row_result.errors}")
+    
+    def before_import(self, dataset, using_transactions, dry_run, **kwargs):
+        """Called before import starts"""
+        print(f"🚀 Starting import of {len(dataset)} rows...")
+        print(f"📊 Dataset preview: {dataset[:3] if len(dataset) > 0 else 'Empty dataset'}")
+        
+    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+        """Called after import completes"""
+        print(f"✅ Import completed!")
+        print(f"📈 Results: {result.totals}")
+        if result.has_errors():
+            print(f"❌ Errors: {result.errors}")
+        if result.has_validation_errors():
+            print(f"⚠️ Validation errors: {result.validation_errors}")
 
 
 @admin.register(Company)
@@ -214,6 +235,44 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
     def get_export_resource_class(self):
         """Return the resource class for export"""
         return StoreProductCodeResource
+    
+    def import_action(self, request, *args, **kwargs):
+        """Custom import action with better logging"""
+        print(f"🎯 Import action called by user: {request.user}")
+        print(f"📁 Request files: {list(request.FILES.keys())}")
+        
+        if 'import_file' in request.FILES:
+            file = request.FILES['import_file']
+            print(f"📄 File name: {file.name}")
+            print(f"📏 File size: {file.size} bytes")
+            print(f"📋 Content type: {file.content_type}")
+        
+        # Call parent import action
+        result = super().import_action(request, *args, **kwargs)
+        print(f"🎉 Import action completed: {result}")
+        return result
+    
+    def get_import_form(self):
+        """Return the import form class"""
+        from import_export.forms import ImportForm
+        return ImportForm
+    
+    def get_import_resource(self):
+        """Return the import resource instance"""
+        resource_class = self.get_import_resource_class()
+        return resource_class()
+    
+    def get_export_resource(self):
+        """Return the export resource instance"""
+        resource_class = self.get_export_resource_class()
+        return resource_class()
+    
+    def get_import_resource_kwargs(self, request, **kwargs):
+        """Customize import resource kwargs"""
+        return {
+            'request': request,
+            'user': request.user,
+        }
     
     def get_urls(self):
         """Add custom URLs for template download"""
