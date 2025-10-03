@@ -20,6 +20,11 @@ urlpatterns = [
         name="user-profiles-create-view",
     ),
     path(
+        "user-profiles/<int:pk>/",
+        views.UserProfileDetailAPIView.as_view(),
+        name="user-profiles-detail-view",
+    ),
+    path(
         "user-profiles/<int:pk>/change/",
         views.UserProfileUpdateAPIView.as_view(),
         name="user-profiles-update-view",

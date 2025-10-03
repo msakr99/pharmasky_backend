@@ -100,6 +100,36 @@ class UserProfileRetrieveAPIView(RetrieveAPIView):
         return super().get_serializer(*args, **kwargs)
 
 
+class UserProfileDetailAPIView(RetrieveAPIView):
+    """
+    API View to get a specific profile by ID
+    """
+    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    serializer_class = UserProfileReadSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = UserProfile.objects.select_related(
+            "user", "city", "city__country", "payment_period", 
+            "data_entry", "sales", "manager", "area_manager", "delivery"
+        ).all()
+
+        if user.is_superuser:
+            return queryset
+
+        match user.role:
+            case Role.MANAGER:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(manager=user))
+            case Role.AREA_MANAGER:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(area_manager=user))
+            case Role.SALES:
+                queryset = queryset.filter(models.Q(user=user) | models.Q(sales=user))
+            case _r:
+                queryset = queryset.none()
+
+        return queryset
+
+
 class UserProfileCreateAPIView(CreateAPIView):
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
     serializer_class = UserProfileCreateUpdateSerializer
