@@ -39,7 +39,7 @@ class StoreProductCodeResource(resources.ModelResource):
             'updated_at'
         )
         export_order = fields
-        import_id_fields = ['product__name', 'store__name']
+        import_id_fields = ['product', 'store']
         skip_unchanged = False
         report_skipped = True
         use_bulk = False
@@ -64,6 +64,41 @@ class StoreProductCodeResource(resources.ModelResource):
         else:
             print(f"❌ Error importing StoreProductCode: {row.get('code', 'N/A')} - {row_result.errors}")
     
+    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, **kwargs):
+        """Custom import row method with better error handling"""
+        try:
+            return super().import_row(row, instance_loader, using_transactions, dry_run, **kwargs)
+        except Exception as e:
+            print(f"❌ Error in import_row: {e}")
+            print(f"   Row data: {row}")
+            raise
+    
+    def get_or_init_instance(self, instance_loader, row):
+        """Get or initialize instance for import"""
+        try:
+            return super().get_or_init_instance(instance_loader, row)
+        except Exception as e:
+            print(f"❌ Error in get_or_init_instance: {e}")
+            print(f"   Row data: {row}")
+            raise
+    
+    def get_instance(self, instance_loader, row):
+        """Get instance for import"""
+        try:
+            return super().get_instance(instance_loader, row)
+        except Exception as e:
+            print(f"❌ Error in get_instance: {e}")
+            print(f"   Row data: {row}")
+            raise
+    
+    def get_import_id_fields(self):
+        """Get import ID fields"""
+        return self._meta.import_id_fields
+    
+    def get_import_id_fields(self):
+        """Get import ID fields"""
+        return self._meta.import_id_fields
+    
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
         """Called before import starts"""
         print(f"🚀 Starting import of {len(dataset)} rows...")
@@ -75,8 +110,14 @@ class StoreProductCodeResource(resources.ModelResource):
         print(f"📈 Results: {result.totals}")
         if result.has_errors():
             print(f"❌ Errors: {result.errors}")
+            # Print first few errors for debugging
+            for i, error in enumerate(result.errors[:5]):
+                print(f"   Error {i+1}: {error}")
         if result.has_validation_errors():
             print(f"⚠️ Validation errors: {result.validation_errors}")
+            # Print first few validation errors for debugging
+            for i, error in enumerate(result.validation_errors[:5]):
+                print(f"   Validation Error {i+1}: {error}")
 
 
 @admin.register(Company)
