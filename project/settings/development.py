@@ -40,13 +40,35 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://129.212.140.152",
+    "https://129.212.140.152",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://129.212.140.152",
+    "https://129.212.140.152",
 ]
+
+# Additional CORS headers for development
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-timezone',
+    'content-disposition',
+]
+
+# Security headers for development
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 # Storage configuration for development (local filesystem)
 STORAGES = {

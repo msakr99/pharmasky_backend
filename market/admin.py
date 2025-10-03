@@ -97,7 +97,7 @@ class StoreProductCodeModelAdmin(DefaultBaseAdminItems):
     search_fields = ("code", "product__name", "store__name")
     search_help_text = _("Search by code, product name or store name.")
     list_select_related = ("product", "store")
-    autocomplete_fields = ("product", "store")
+    raw_id_fields = ("product", "store")
 
 
 @admin.register(ProductCode)

@@ -102,7 +102,7 @@ class UserProfileRetrieveAPIView(RetrieveAPIView):
 
 class UserProfileDetailAPIView(RetrieveAPIView):
     """
-    API View to get a specific profile by ID
+    API View to get a specific profile by user ID
     """
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
     serializer_class = UserProfileReadSerializer
@@ -128,6 +128,15 @@ class UserProfileDetailAPIView(RetrieveAPIView):
                 queryset = queryset.none()
 
         return queryset
+
+    def get_object(self):
+        user_id = self.kwargs.get('pk')
+        try:
+            obj = self.get_queryset().get(user_id=user_id)
+            return obj
+        except UserProfile.DoesNotExist:
+            from django.http import Http404
+            raise Http404("User profile not found for this user ID.")
 
 
 class UserProfileCreateAPIView(CreateAPIView):
