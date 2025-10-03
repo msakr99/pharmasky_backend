@@ -10,6 +10,12 @@ services:
       - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - DEBUG=False
       - DJANGO_SETTINGS_MODULE=project.settings_simple
@@ -39,6 +45,11 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./ssl:/etc/nginx/ssl
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - web
     networks:
@@ -63,6 +74,12 @@ services:
     volumes:
       - .:/app
       - media_volume:/app/media
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     env_file:
       - production.env
     depends_on:
