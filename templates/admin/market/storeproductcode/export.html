@@ -7,7 +7,7 @@
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
 &rsaquo; <a href="{% url 'admin:app_list' app_label='market' %}">Market</a>
-&rsaquo; <a href="../storeproductcode/">Store Product Codes</a>
+&rsaquo; <a href="../">Store Product Codes</a>
 &rsaquo; {% trans 'Export' %}
 </div>
 {% endblock %}
@@ -35,7 +35,7 @@
         
         <div class="submit-row">
             <input type="submit" value="{% trans 'Export' %}" class="default">
-            <a href="../storeproductcode/" class="button cancel-link">{% trans 'Cancel' %}</a>
+            <a href="../" class="button cancel-link">{% trans 'Cancel' %}</a>
         </div>
     </form>
 </div>

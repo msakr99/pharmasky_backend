@@ -238,10 +238,10 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
     
     # Ensure import/export URLs are available
     def get_import_url(self):
-        return f"../{self.model._meta.app_label}/{self.model._meta.model_name}/import/"
+        return f"{self.model._meta.model_name}/import/"
     
     def get_export_url(self):
-        return f"../{self.model._meta.app_label}/{self.model._meta.model_name}/export/"
+        return f"{self.model._meta.model_name}/export/"
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
