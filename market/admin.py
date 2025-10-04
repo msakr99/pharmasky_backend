@@ -232,9 +232,31 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
     list_select_related = ("product", "product__company", "product__category", "store")
     readonly_fields = ("id", "created_at", "updated_at")
     
-    # Import/Export settings
-    import_template_name = 'admin/market/storeproductcode/import.html'
-    export_template_name = 'admin/market/storeproductcode/export.html'
+    # Import/Export settings - use default templates
+    import_template_name = 'admin/import_export/import.html'
+    export_template_name = 'admin/import_export/export.html'
+    
+    # Override the default template for change_list
+    change_list_template = 'admin/import_export/change_list_import_export.html'
+    
+    # Ensure the template context has the right variables
+    def changelist_view(self, request, extra_context=None):
+        try:
+            # Add debug info
+            if extra_context is None:
+                extra_context = {}
+            extra_context['has_import_permission'] = self.has_import_permission(request)
+            extra_context['has_export_permission'] = self.has_export_permission(request)
+            print(f"DEBUG: has_import_permission = {extra_context['has_import_permission']}")
+            print(f"DEBUG: has_export_permission = {extra_context['has_export_permission']}")
+            print(f"DEBUG: user = {request.user}")
+            print(f"DEBUG: user.is_superuser = {request.user.is_superuser}")
+            return super().changelist_view(request, extra_context)
+        except Exception as e:
+            print(f"Error in StoreProductCode admin: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     # Ensure import/export URLs are available
     def get_import_url(self):
