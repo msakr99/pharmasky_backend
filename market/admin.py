@@ -64,10 +64,10 @@ class StoreProductCodeResource(resources.ModelResource):
         else:
             print(f"❌ Error importing StoreProductCode: {row.get('code', 'N/A')} - {row_result.errors}")
     
-    def import_row(self, row, instance_loader, using_transactions=True, dry_run=False, **kwargs):
+    def import_row(self, row, instance_loader, **kwargs):
         """Custom import row method with better error handling"""
         try:
-            return super().import_row(row, instance_loader, using_transactions, dry_run, **kwargs)
+            return super().import_row(row, instance_loader, **kwargs)
         except Exception as e:
             print(f"❌ Error in import_row: {e}")
             print(f"   Row data: {row}")
