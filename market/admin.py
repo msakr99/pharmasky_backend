@@ -27,12 +27,8 @@ class StoreProductCodeResource(resources.ModelResource):
         model = StoreProductCode
         fields = (
             'id',
-            'product__name',
-            'product__e_name', 
-            'product__company__name',
-            'product__category__name',
-            'store__name',
-            'store__e_name',
+            'product',
+            'store',
             'code',
             'is_active',
             'created_at',
@@ -63,37 +59,6 @@ class StoreProductCodeResource(resources.ModelResource):
             print(f"⏭️ Skipped StoreProductCode: {row.get('code', 'N/A')}")
         else:
             print(f"❌ Error importing StoreProductCode: {row.get('code', 'N/A')} - {row_result.errors}")
-    
-    def import_row(self, row, instance_loader, **kwargs):
-        """Custom import row method with better error handling"""
-        try:
-            return super().import_row(row, instance_loader, **kwargs)
-        except Exception as e:
-            print(f"❌ Error in import_row: {e}")
-            print(f"   Row data: {row}")
-            raise
-    
-    def get_or_init_instance(self, instance_loader, row):
-        """Get or initialize instance for import"""
-        try:
-            return super().get_or_init_instance(instance_loader, row)
-        except Exception as e:
-            print(f"❌ Error in get_or_init_instance: {e}")
-            print(f"   Row data: {row}")
-            raise
-    
-    def get_instance(self, instance_loader, row):
-        """Get instance for import"""
-        try:
-            return super().get_instance(instance_loader, row)
-        except Exception as e:
-            print(f"❌ Error in get_instance: {e}")
-            print(f"   Row data: {row}")
-            raise
-    
-    def get_import_id_fields(self):
-        """Get import ID fields"""
-        return self._meta.import_id_fields
     
     def get_import_id_fields(self):
         """Get import ID fields"""
