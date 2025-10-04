@@ -7,7 +7,7 @@
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
 &rsaquo; <a href="{% url 'admin:app_list' app_label='market' %}">Market</a>
-&rsaquo; <a href="../">Store Product Codes</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">Store Product Codes</a>
 &rsaquo; {% trans 'Import' %}
 </div>
 {% endblock %}
@@ -43,8 +43,8 @@
         
         <div class="submit-row">
             <input type="submit" value="{% trans 'Import' %}" class="default">
-            <a href="download-template/" class="button" style="background: #6c757d; color: white; margin-right: 10px;">📄 {% trans 'Download Template' %}</a>
-            <a href="../" class="button cancel-link">{% trans 'Cancel' %}</a>
+            <a href="{% url opts|admin_urlname:'download_template' %}" class="button" style="background: #6c757d; color: white; margin-right: 10px;">📄 {% trans 'Download Template' %}</a>
+            <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">{% trans 'Cancel' %}</a>
         </div>
     </form>
 </div>
