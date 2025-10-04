@@ -69,27 +69,30 @@
     </form>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const dryRunCheckbox = document.querySelector('input[name="dry_run"]');
-    const submitButton = document.querySelector('input[type="submit"]');
-    
-    function updateSubmitButton() {
-        if (dryRunCheckbox.checked) {
-            submitButton.value = '{% trans "Preview Import" %}';
-            submitButton.style.backgroundColor = '#17a2b8';
-            submitButton.style.color = 'white';
-        } else {
-            submitButton.value = '{% trans "Import Data" %}';
-            submitButton.style.backgroundColor = '#28a745';
-            submitButton.style.color = 'white';
-        }
-    }
-    
-    dryRunCheckbox.addEventListener('change', updateSubmitButton);
-    updateSubmitButton();
-});
-</script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dryRunCheckbox = document.querySelector('input[name="dry_run"]');
+            const submitButton = document.querySelector('input[type="submit"]');
+
+            // Force uncheck dry run by default
+            dryRunCheckbox.checked = false;
+
+            function updateSubmitButton() {
+                if (dryRunCheckbox.checked) {
+                    submitButton.value = '{% trans "Preview Import" %}';
+                    submitButton.style.backgroundColor = '#17a2b8';
+                    submitButton.style.color = 'white';
+                } else {
+                    submitButton.value = '{% trans "Import Data" %}';
+                    submitButton.style.backgroundColor = '#28a745';
+                    submitButton.style.color = 'white';
+                }
+            }
+
+            dryRunCheckbox.addEventListener('change', updateSubmitButton);
+            updateSubmitButton();
+        });
+        </script>
 
 <div class="module">
     <h2>{% trans "Import Instructions" %}</h2>

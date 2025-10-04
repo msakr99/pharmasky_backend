@@ -222,7 +222,7 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
 
     list_display = (
         "product",
-        "store", 
+        "store",
         "code",
         "is_active",
         "updated_at",
