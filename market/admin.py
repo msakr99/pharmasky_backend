@@ -72,10 +72,17 @@ class StoreProductCodeResource(resources.ModelResource):
             print(f"🚀 Starting REAL IMPORT of {len(dataset)} rows... (Data will be saved)")
         print(f"📊 Dataset preview: {dataset[:3] if len(dataset) > 0 else 'Empty dataset'}")
         
+        # Log dry run status
+        if dry_run:
+            print("⚠️  WARNING: This is a DRY RUN - no data will be saved to database!")
+        else:
+            print("✅ This is a REAL IMPORT - data will be saved to database!")
+        
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
         """Called after import completes"""
         if dry_run:
             print(f"🔍 DRY RUN completed! (No data was saved)")
+            print("⚠️  To actually import data, uncheck the 'Dry run' checkbox and try again!")
         else:
             print(f"✅ Import completed! (Data was saved)")
         print(f"📈 Results: {result.totals}")
