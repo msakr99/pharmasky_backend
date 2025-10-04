@@ -453,8 +453,18 @@ class SimpleStoreProductCodeUploadSerializer(serializers.Serializer):
             status='pending'
         )
         
-        # Start processing the file asynchronously
-        from .tasks import process_simple_upload_file
-        process_simple_upload_file.delay(upload.id)
+        # Process the file synchronously (without Celery)
+        try:
+            from .tasks import process_simple_upload_file_sync
+            result = process_simple_upload_file_sync(upload.id)
+            
+            # Update upload with results
+            upload.refresh_from_db()
+            
+        except Exception as e:
+            # If processing fails, mark as failed
+            upload.status = 'failed'
+            upload.error_log = str(e)
+            upload.save()
         
         return upload

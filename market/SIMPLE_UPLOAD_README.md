@@ -49,12 +49,17 @@ GET /api/market/upload/simple-sample/
 ```json
 {
     "success": true,
-    "message": "تم رفع الملف بنجاح وبدأت معالجته",
+    "message": "تم رفع الملف بنجاح ومعالجته",
     "upload_id": 123,
-    "status": "pending",
+    "status": "completed",
     "store": "Store Name",
     "file_name": "uploaded_file.xlsx",
-    "uploaded_at": "2024-01-15T10:30:00Z"
+    "uploaded_at": "2024-01-15T10:30:00Z",
+    "total_rows": 5,
+    "successful_rows": 4,
+    "failed_rows": 1,
+    "success_rate": 80.0,
+    "error_log": "Row 3: Product with ID 999 not found"
 }
 ```
 
@@ -67,8 +72,8 @@ GET /api/market/upload/simple-sample/
 ```
 
 ## Processing
-- The file is processed asynchronously in the background
-- You can check the upload status using the existing upload progress endpoints
+- The file is processed synchronously (immediately)
+- Results are returned in the same response
 - The system will create new StoreProductCode records or update existing ones
 - Duplicate product-store combinations will be updated with the new code
 
@@ -131,4 +136,5 @@ print(response.json())
 ## Notes
 - This endpoint is designed for simple, direct uploads with known product and store IDs
 - For more complex uploads with product name matching, use the existing bulk upload endpoints
-- The upload is processed asynchronously, so check the status using the upload_id returned in the response
+- The upload is processed synchronously, so results are returned immediately in the response
+- No need to check status separately - all results are in the initial response

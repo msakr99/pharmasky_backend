@@ -648,12 +648,22 @@ class SimpleStoreProductCodeUploadAPIView(CreateAPIView):
         upload = serializer.save()
         
         # Return success response with upload details
-        return Response({
+        response_data = {
             'success': True,
-            'message': 'تم رفع الملف بنجاح وبدأت معالجته',
+            'message': 'تم رفع الملف بنجاح ومعالجته',
             'upload_id': upload.id,
             'status': upload.status,
             'store': upload.store.name,
             'file_name': upload.file_name,
-            'uploaded_at': upload.uploaded_at
-        }, status=201)
+            'uploaded_at': upload.uploaded_at,
+            'total_rows': upload.total_rows,
+            'successful_rows': upload.successful_rows,
+            'failed_rows': upload.failed_rows,
+            'success_rate': upload.success_rate
+        }
+        
+        # Add error log if there are errors
+        if upload.error_log:
+            response_data['error_log'] = upload.error_log
+        
+        return Response(response_data, status=201)
