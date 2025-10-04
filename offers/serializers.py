@@ -234,10 +234,21 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
                 _("in line {line_number}, Product code was not specified.").format(line_number=line_number)
             )
 
+        # Convert decimal to integer if needed (handle Excel format like 22.0 -> 22)
+        try:
+            if isinstance(value, (int, float)):
+                code_value = int(value)
+            else:
+                code_value = int(float(str(value)))
+        except (ValueError, TypeError):
+            raise serializers.ValidationError(
+                _("in line {line_number}, Product code must be a valid number.").format(line_number=line_number)
+            )
+
         product_code = (
             get_model("market", "ProductCode")
             .objects.select_related("product")
-            .filter(code=value, user=self.user)
+            .filter(code=code_value, user=self.user)
             .first()
         )
 
@@ -245,14 +256,18 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
             raise serializers.ValidationError(
                 _(
                     "in line {line_number}, Product code {code} was not found, Please add the Code first then try again."
-                ).format(line_number=line_number, code=value)
+                ).format(line_number=line_number, code=code_value)
             )
 
         return product_code
 
     def validate_column_available_amount(self, value, line_number):
         try:
-            validated_value = int(value)
+            # Convert decimal to integer if needed (handle Excel format like 100.0 -> 100)
+            if isinstance(value, (int, float)):
+                validated_value = int(value)
+            else:
+                validated_value = int(float(str(value)))
         except (ValueError, TypeError):
             err_message = _("in line {line_number}, Available amount should be an Integer postive number.").format(
                 line_number=line_number
@@ -272,7 +287,11 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
             return value
 
         try:
-            validated_value = int(value)
+            # Convert decimal to integer if needed (handle Excel format like 50.0 -> 50)
+            if isinstance(value, (int, float)):
+                validated_value = int(value)
+            else:
+                validated_value = int(float(str(value)))
         except (ValueError, TypeError):
             err_message = _(
                 "in line {line_number}, Max amount per invoice should be an Integer postive number."
