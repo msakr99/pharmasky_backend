@@ -49,6 +49,16 @@
                     <p class="help">{% trans "Continue importing even if some rows have errors" %}</p>
                 </div>
             </div>
+            
+            <div class="form-row">
+                <div>
+                    <label>
+                        <input type="checkbox" name="dry_run" value="1" checked>
+                        {% trans "Dry run (preview only)" %}
+                    </label>
+                    <p class="help">{% trans "Check this to preview the import without saving data. Uncheck to actually import the data." %}</p>
+                </div>
+            </div>
         </fieldset>
         
         <div class="submit-row">
@@ -58,6 +68,26 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dryRunCheckbox = document.querySelector('input[name="dry_run"]');
+    const submitButton = document.querySelector('input[type="submit"]');
+    
+    function updateSubmitButton() {
+        if (dryRunCheckbox.checked) {
+            submitButton.value = '{% trans "Preview Import" %}';
+            submitButton.style.backgroundColor = '#17a2b8';
+        } else {
+            submitButton.value = '{% trans "Import Data" %}';
+            submitButton.style.backgroundColor = '#28a745';
+        }
+    }
+    
+    dryRunCheckbox.addEventListener('change', updateSubmitButton);
+    updateSubmitButton();
+});
+</script>
 
 <div class="module">
     <h2>{% trans "Import Instructions" %}</h2>

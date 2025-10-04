@@ -66,12 +66,18 @@ class StoreProductCodeResource(resources.ModelResource):
     
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
         """Called before import starts"""
-        print(f"🚀 Starting import of {len(dataset)} rows...")
+        if dry_run:
+            print(f"🔍 Starting DRY RUN of {len(dataset)} rows... (No data will be saved)")
+        else:
+            print(f"🚀 Starting REAL IMPORT of {len(dataset)} rows... (Data will be saved)")
         print(f"📊 Dataset preview: {dataset[:3] if len(dataset) > 0 else 'Empty dataset'}")
         
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
         """Called after import completes"""
-        print(f"✅ Import completed!")
+        if dry_run:
+            print(f"🔍 DRY RUN completed! (No data was saved)")
+        else:
+            print(f"✅ Import completed! (Data was saved)")
         print(f"📈 Results: {result.totals}")
         if result.has_errors():
             print(f"❌ Errors: {result.errors}")
