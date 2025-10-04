@@ -50,10 +50,10 @@
                 </div>
             </div>
             
-            <div class="form-row">
+            <div class="form-row" style="display: none;">
                 <div>
                     <label>
-                        <input type="checkbox" name="dry_run" value="1">
+                        <input type="checkbox" name="dry_run" value="1" style="display: none;">
                         {% trans "Dry run (preview only)" %}
                     </label>
                     <p class="help">{% trans "Check this to preview the import without saving data. Uncheck to actually import the data." %}</p>
@@ -74,23 +74,30 @@
             const dryRunCheckbox = document.querySelector('input[name="dry_run"]');
             const submitButton = document.querySelector('input[type="submit"]');
 
-            // Force uncheck dry run by default
-            dryRunCheckbox.checked = false;
-
-            function updateSubmitButton() {
-                if (dryRunCheckbox.checked) {
-                    submitButton.value = '{% trans "Preview Import" %}';
-                    submitButton.style.backgroundColor = '#17a2b8';
-                    submitButton.style.color = 'white';
-                } else {
-                    submitButton.value = '{% trans "Import Data" %}';
-                    submitButton.style.backgroundColor = '#28a745';
-                    submitButton.style.color = 'white';
-                }
+            // Force uncheck dry run by default and hide it
+            if (dryRunCheckbox) {
+                dryRunCheckbox.checked = false;
+                dryRunCheckbox.style.display = 'none';
+                dryRunCheckbox.parentElement.parentElement.style.display = 'none';
             }
 
-            dryRunCheckbox.addEventListener('change', updateSubmitButton);
-            updateSubmitButton();
+            // Set button to Import Data mode
+            if (submitButton) {
+                submitButton.value = '{% trans "Import Data" %}';
+                submitButton.style.backgroundColor = '#28a745';
+                submitButton.style.color = 'white';
+            }
+
+            // Add form submission handler to ensure dry_run is not sent
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (dryRunCheckbox) {
+                        dryRunCheckbox.checked = false;
+                        dryRunCheckbox.disabled = true;
+                    }
+                });
+            }
         });
         </script>
 
