@@ -412,3 +412,49 @@ class StoreSerializer(BaseModelSerializer):
     class Meta:
         model = Store
         fields = ['id', 'name', 'e_name']
+
+
+class SimpleStoreProductCodeUploadSerializer(serializers.Serializer):
+    """Serializer for simple store product code upload with product_id, store_id, code"""
+    
+    store_id = serializers.IntegerField()
+    file = serializers.FileField()
+    
+    def validate_store_id(self, value):
+        """Validate store exists"""
+        from accounts.models import Store
+        try:
+            Store.objects.get(id=value)
+        except Store.DoesNotExist:
+            raise serializers.ValidationError("Store not found")
+        return value
+    
+    def validate_file(self, value):
+        """Validate uploaded file"""
+        # Check file extension
+        if not value.name.endswith(('.xlsx', '.xls')):
+            raise serializers.ValidationError("Only Excel files (.xlsx, .xls) are allowed")
+        
+        # Check file size (max 10MB)
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("File size cannot exceed 10MB")
+        
+        return value
+    
+    def create(self, validated_data):
+        """Create upload record and start processing"""
+        request = self.context.get('request')
+        
+        # Create upload record
+        upload = StoreProductCodeUpload.objects.create(
+            store_id=validated_data['store_id'],
+            file=validated_data['file'],
+            uploaded_by=request.user if request else None,
+            status='pending'
+        )
+        
+        # Start processing the file asynchronously
+        from .tasks import process_simple_upload_file
+        process_simple_upload_file.delay(upload.id)
+        
+        return upload

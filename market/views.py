@@ -45,6 +45,7 @@ from market.serializers import (
     BulkStoreProductCodeUploadSerializer,
     UploadProgressSerializer,
     StoreSerializer,
+    SimpleStoreProductCodeUploadSerializer,
 )
 
 get_model = apps.get_model
@@ -630,3 +631,29 @@ class StoreProductCodeUploadStatisticsAPIView(ListAPIView):
             'pending_uploads': pending_uploads,
             'average_success_rate': round(avg_success_rate, 2)
         })
+
+
+class SimpleStoreProductCodeUploadAPIView(CreateAPIView):
+    """
+    API view for simple store product code upload with product_id, store_id, code columns
+    """
+    serializer_class = SimpleStoreProductCodeUploadSerializer
+    permission_classes = [AllAuthenticatedUsers]
+    
+    def create(self, request, *args, **kwargs):
+        """Handle simple upload creation"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        upload = serializer.save()
+        
+        # Return success response with upload details
+        return Response({
+            'success': True,
+            'message': 'تم رفع الملف بنجاح وبدأت معالجته',
+            'upload_id': upload.id,
+            'status': upload.status,
+            'store': upload.store.name,
+            'file_name': upload.file_name,
+            'uploaded_at': upload.uploaded_at
+        }, status=201)

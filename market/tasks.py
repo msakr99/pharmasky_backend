@@ -261,3 +261,131 @@ def is_price_match(file_price, system_price, tolerance=0.1):
     """
     price_difference = abs(system_price - file_price)
     return price_difference <= tolerance
+
+
+@shared_task(bind=True, max_retries=3)
+def process_simple_upload_file(self, upload_id):
+    """
+    Process simple uploaded file for store product codes with product_id, store_id, code columns
+    """
+    try:
+        from .models import StoreProductCodeUpload, StoreProductCode, Product
+        import pandas as pd
+        from django.db import transaction
+        
+        upload = StoreProductCodeUpload.objects.get(id=upload_id)
+        upload.status = 'processing'
+        upload.save()
+        
+        # Read the uploaded file
+        if upload.file.name.endswith('.xlsx'):
+            df = pd.read_excel(upload.file.path)
+        elif upload.file.name.endswith('.xls'):
+            df = pd.read_excel(upload.file.path)
+        else:
+            raise ValueError("Unsupported file format")
+        
+        # Validate required columns
+        required_columns = ['product_id', 'store_id', 'code']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {missing_columns}")
+        
+        # Clean the data
+        df = df.dropna(subset=required_columns)
+        df = df[df['product_id'].notna() & df['store_id'].notna() & df['code'].notna()]
+        
+        total_rows = len(df)
+        successful_rows = 0
+        failed_rows = 0
+        errors = []
+        
+        upload.total_rows = total_rows
+        upload.save()
+        
+        # Process each row
+        for index, row in df.iterrows():
+            try:
+                product_id = int(row['product_id'])
+                store_id = int(row['store_id'])
+                code = int(row['code'])
+                
+                # Validate product exists
+                try:
+                    product = Product.objects.get(id=product_id)
+                except Product.DoesNotExist:
+                    errors.append(f"Row {index + 1}: Product with ID {product_id} not found")
+                    failed_rows += 1
+                    continue
+                
+                # Validate store exists
+                from accounts.models import Store
+                try:
+                    store = Store.objects.get(id=store_id)
+                except Store.DoesNotExist:
+                    errors.append(f"Row {index + 1}: Store with ID {store_id} not found")
+                    failed_rows += 1
+                    continue
+                
+                # Validate code is positive
+                if code <= 0:
+                    errors.append(f"Row {index + 1}: Code must be positive, got {code}")
+                    failed_rows += 1
+                    continue
+                
+                # Create or update StoreProductCode
+                with transaction.atomic():
+                    store_product_code, created = StoreProductCode.objects.get_or_create(
+                        product_id=product_id,
+                        store_id=store_id,
+                        defaults={'code': code, 'is_active': True}
+                    )
+                    
+                    if not created:
+                        # Update existing record
+                        store_product_code.code = code
+                        store_product_code.is_active = True
+                        store_product_code.save()
+                
+                successful_rows += 1
+                
+            except (ValueError, TypeError) as e:
+                errors.append(f"Row {index + 1}: Invalid data format - {str(e)}")
+                failed_rows += 1
+            except Exception as e:
+                errors.append(f"Row {index + 1}: Unexpected error - {str(e)}")
+                failed_rows += 1
+        
+        # Update upload status
+        upload.successful_rows = successful_rows
+        upload.failed_rows = failed_rows
+        upload.status = 'completed'
+        upload.processed_at = timezone.now()
+        upload.error_log = '\n'.join(errors) if errors else ''
+        upload.save()
+        
+        logger.info(f"Simple upload {upload_id} completed: {successful_rows} successful, {failed_rows} failed")
+        
+        return {
+            'success': True,
+            'total_rows': total_rows,
+            'successful_rows': successful_rows,
+            'failed_rows': failed_rows,
+            'errors': errors
+        }
+        
+    except Exception as exc:
+        logger.error(f"Error processing simple upload {upload_id}: {exc}")
+        
+        # Update upload status to failed
+        try:
+            upload = StoreProductCodeUpload.objects.get(id=upload_id)
+            upload.status = 'failed'
+            upload.processed_at = timezone.now()
+            upload.error_log = str(exc)
+            upload.save()
+        except:
+            pass
+        
+        # Retry the task with exponential backoff
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))

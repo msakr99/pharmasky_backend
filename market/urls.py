@@ -28,6 +28,59 @@ def download_sample_file():
             1006,
             1007
         ],
+
+
+def download_simple_sample_file():
+    """Generate and return a simple sample Excel file for upload with product_id, store_id, code columns"""
+    # Create sample data for simple upload
+    sample_data = {
+        'product_id': [1, 2, 3, 4, 5],
+        'store_id': [1, 1, 1, 1, 1],
+        'code': [1001, 1002, 1003, 1004, 1005]
+    }
+    
+    # Create DataFrame
+    df = pd.DataFrame(sample_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='StoreProductCodes', index=False)
+    
+    output.seek(0)
+    
+    # Create HTTP response
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="simple_store_product_codes_template.xlsx"'
+    
+    return response
+
+
+def download_sample_file():
+    """Generate and return a sample Excel file for upload with flexible matching examples"""
+    # Create sample data with examples showing flexibility
+    sample_data = {
+        'product_name': [
+            'باراسيتامول 500 مجم',
+            'أموكسيسيلين 250 مجم',
+            'إيبوبروفين 400 مجم',
+            'أوميبرازول 20 مجم',
+            'فيتامين د3 1000 وحدة',
+            'باراسيتامول 500 مج',  # مثال على اسم غير مكتمل
+            'أموكسيسيلين 250',     # مثال على اسم مختصر
+        ],
+        'code': [
+            1001,
+            1002,
+            1003,
+            1004,
+            1005,
+            1006,
+            1007
+        ],
         'product_id': [
             1,
             2,
@@ -180,6 +233,16 @@ urlpatterns = [
         "upload/sample/",
         lambda request: download_sample_file(),
         name="download_sample",
+    ),
+    path(
+        "store-product-codes/simple-upload/",
+        views.SimpleStoreProductCodeUploadAPIView.as_view(),
+        name="simple-store-product-code-upload",
+    ),
+    path(
+        "upload/simple-sample/",
+        lambda request: download_simple_sample_file(),
+        name="download_simple_sample",
     ),
 ]
 
