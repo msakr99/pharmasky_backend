@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import Pharmacy, Store
 from django.utils.translation import gettext_lazy as _
+from django.core.exceptions import ValidationError
 from market import managers
 from market.choices import SHAPE_CHOICES, LETTER_CHOICES, UPLOAD_STATUS_CHOICES, ACTION_CHOICES
 from market.validators import StoreProductCodeFileValidator, ProductMatchCacheValidator, store_product_code_file_validator
@@ -112,6 +113,24 @@ class StoreProductCode(models.Model):
 
     def __str__(self) -> str:
         return f"{self.code} - {self.product} - {self.store}"
+
+    def clean(self):
+        """Add model-level validation"""
+        super().clean()
+        
+        # Validate that code is positive
+        if self.code and self.code <= 0:
+            raise ValidationError({'code': 'Code must be a positive number'})
+        
+        # Validate that product and store exist
+        if not self.product_id:
+            raise ValidationError({'product': 'Product is required'})
+        if not self.store_id:
+            raise ValidationError({'store': 'Store is required'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 class CodeChangeLog(models.Model):
     

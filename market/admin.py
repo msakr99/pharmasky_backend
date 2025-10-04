@@ -42,23 +42,36 @@ class StoreProductCodeResource(resources.ModelResource):
         
     def before_import_row(self, row, **kwargs):
         """Custom logic before importing each row"""
-        print(f"🔍 Processing row: {row}")
-        # You can add validation or data transformation here
-        pass
+        # Clean and validate row data
+        try:
+            # Ensure code is properly formatted
+            if 'code' in row:
+                row['code'] = str(row['code']).strip()
+            
+            # Log processing with better formatting
+            product_id = row.get('product', 'N/A')
+            store_id = row.get('store', 'N/A')
+            code = row.get('code', 'N/A')
+            print(f"🔍 Processing: Product {product_id}, Store {store_id}, Code {code}")
+            
+        except Exception as e:
+            print(f"❌ Error processing row: {e}")
+            raise
         
     def after_import_row(self, row, row_result, **kwargs):
         """Custom logic after importing each row"""
+        product_id = row.get('product', 'N/A')
+        code = row.get('code', 'N/A')
+        
         if row_result.import_type == row_result.IMPORT_TYPE_NEW:
-            # Log new imports
-            print(f"✅ Imported new StoreProductCode: {row.get('code', 'N/A')}")
+            print(f"✅ Imported: Product {product_id}, Code {code}")
         elif row_result.import_type == row_result.IMPORT_TYPE_UPDATE:
-            # Log updates
-            print(f"🔄 Updated StoreProductCode: {row.get('code', 'N/A')}")
+            print(f"🔄 Updated: Product {product_id}, Code {code}")
         elif row_result.import_type == row_result.IMPORT_TYPE_SKIP:
-            # Log skipped
-            print(f"⏭️ Skipped StoreProductCode: {row.get('code', 'N/A')}")
+            print(f"⏭️ Skipped: Product {product_id}, Code {code}")
         else:
-            print(f"❌ Error importing StoreProductCode: {row.get('code', 'N/A')} - {row_result.errors}")
+            error_msg = row_result.errors[0].error if row_result.errors else "Unknown error"
+            print(f"❌ Failed: Product {product_id}, Code {code} - {error_msg}")
     
     def get_import_id_fields(self):
         """Get import ID fields"""
@@ -66,11 +79,13 @@ class StoreProductCodeResource(resources.ModelResource):
     
     def before_import(self, dataset, using_transactions, dry_run, **kwargs):
         """Called before import starts"""
+        print(f"📊 Dataset info: {len(dataset)} rows, {len(dataset.headers)} columns")
+        print(f"📋 Headers: {dataset.headers}")
+        
         if dry_run:
-            print(f"🔍 Starting DRY RUN of {len(dataset)} rows... (No data will be saved)")
+            print(f"🔍 Starting DRY RUN... (No data will be saved)")
         else:
-            print(f"🚀 Starting REAL IMPORT of {len(dataset)} rows... (Data will be saved)")
-        print(f"📊 Dataset preview: {dataset[:3] if len(dataset) > 0 else 'Empty dataset'}")
+            print(f"🚀 Starting REAL IMPORT... (Data will be saved)")
         
         # Log dry run status
         if dry_run:
@@ -80,21 +95,28 @@ class StoreProductCodeResource(resources.ModelResource):
         
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
         """Called after import completes"""
+        totals = result.totals
+        print(f"📈 Import Results:")
+        print(f"   ✅ New: {totals.get('new', 0)}")
+        print(f"   🔄 Updated: {totals.get('update', 0)}")
+        print(f"   ⏭️ Skipped: {totals.get('skip', 0)}")
+        print(f"   ❌ Errors: {totals.get('error', 0)}")
+        
         if dry_run:
             print(f"🔍 DRY RUN completed! (No data was saved)")
             print("⚠️  To actually import data, uncheck the 'Dry run' checkbox and try again!")
         else:
-            print(f"✅ Import completed! (Data was saved)")
-        print(f"📈 Results: {result.totals}")
+            print(f"✅ IMPORT completed! (Data was saved)")
+        
+        # Print detailed error information
         if result.has_errors():
-            print(f"❌ Errors: {result.errors}")
-            # Print first few errors for debugging
-            for i, error in enumerate(result.errors[:5]):
+            print(f"❌ Import errors found:")
+            for i, error in enumerate(result.errors[:10]):  # Show first 10 errors
                 print(f"   Error {i+1}: {error}")
+        
         if result.has_validation_errors():
-            print(f"⚠️ Validation errors: {result.validation_errors}")
-            # Print first few validation errors for debugging
-            for i, error in enumerate(result.validation_errors[:5]):
+            print(f"⚠️ Validation errors:")
+            for i, error in enumerate(result.validation_errors[:10]):
                 print(f"   Validation Error {i+1}: {error}")
 
 
@@ -327,30 +349,70 @@ class StoreProductCodeModelAdmin(ImportExportMixin, admin.ModelAdmin):
         return custom_urls + urls
     
     def download_template_view(self, request):
-        """Download CSV template for import"""
+        """Download CSV template for import with better instructions"""
         from django.http import HttpResponse
-        import os
         
-        template_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 
-                                   'admin', 'templates', 'storeproductcode_template.csv')
+        template_content = """# Store Product Codes Import Template
+# Required columns: product, store, code
+# Optional columns: is_active
+#
+# Instructions:
+# 1. product: Product ID (must exist in database)
+# 2. store: Store ID (must exist in database)  
+# 3. code: Product code for this store (numeric)
+# 4. is_active: true/false (default: true)
+#
+# Example:
+product,store,code,is_active
+68,4,1001,true
+69,4,1002,true
+70,4,1003,true
+
+# Common issues to avoid:
+# - Product ID must exist in the Products table
+# - Store ID must exist in the Stores table
+# - Code must be unique per product-store combination
+# - Code must be numeric and positive
+"""
         
-        if os.path.exists(template_path):
-            with open(template_path, 'r', encoding='utf-8') as f:
-                response = HttpResponse(f.read(), content_type='text/csv')
-                response['Content-Disposition'] = 'attachment; filename="storeproductcode_template.csv"'
-                return response
-        else:
-            # Generate template dynamically
-            template_content = """product__name,product__e_name,store__name,store__e_name,code,is_active
-"أسبرين 500 مجم","Aspirin 500mg","صيدلية النور","Al-Nour Pharmacy",1001,True
-"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية النور","Al-Nour Pharmacy",1002,True
-"فيتامين سي 1000 مجم","Vitamin C 1000mg","صيدلية النور","Al-Nour Pharmacy",1003,True
-"أسبرين 500 مجم","Aspirin 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2001,True
-"باراسيتامول 500 مجم","Paracetamol 500mg","صيدلية الشفاء","Al-Shifa Pharmacy",2002,True"""
+        response = HttpResponse(template_content, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="storeproductcode_import_template.csv"'
+        return response
+
+    def analyze_import_errors(self, result):
+        """Analyze and categorize import errors"""
+        if not result.has_errors():
+            return "No errors found"
+        
+        error_categories = {
+            'product_not_found': [],
+            'store_not_found': [], 
+            'duplicate_codes': [],
+            'invalid_data': [],
+            'other_errors': []
+        }
+        
+        for error in result.errors:
+            error_msg = str(error.error).lower()
             
-            response = HttpResponse(template_content, content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="storeproductcode_template.csv"'
-            return response
+            if 'product' in error_msg and ('not found' in error_msg or 'does not exist' in error_msg):
+                error_categories['product_not_found'].append(error)
+            elif 'store' in error_msg and ('not found' in error_msg or 'does not exist' in error_msg):
+                error_categories['store_not_found'].append(error)
+            elif 'duplicate' in error_msg or 'unique' in error_msg:
+                error_categories['duplicate_codes'].append(error)
+            elif 'invalid' in error_msg or 'valid' in error_msg:
+                error_categories['invalid_data'].append(error)
+            else:
+                error_categories['other_errors'].append(error)
+        
+        # Print analysis
+        print("🔍 Error Analysis:")
+        for category, errors in error_categories.items():
+            if errors:
+                print(f"   {category}: {len(errors)} errors")
+        
+        return error_categories
 
 
 @admin.register(ProductCode)
