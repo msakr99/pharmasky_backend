@@ -6,30 +6,6 @@ import pandas as pd
 import io
 
 
-def download_sample_file():
-    """Generate and return a sample Excel file for upload with flexible matching examples"""
-    # Create sample data with examples showing flexibility
-    sample_data = {
-        'product_name': [
-            'باراسيتامول 500 مجم',
-            'أموكسيسيلين 250 مجم',
-            'إيبوبروفين 400 مجم',
-            'أوميبرازول 20 مجم',
-            'فيتامين د3 1000 وحدة',
-            'باراسيتامول 500 مج',  # مثال على اسم غير مكتمل
-            'أموكسيسيلين 250',     # مثال على اسم مختصر
-        ],
-        'code': [
-            1001,
-            1002,
-            1003,
-            1004,
-            1005,
-            1006,
-            1007
-        ],
-
-
 def download_simple_sample_file():
     """Generate and return a simple sample Excel file for upload with product_id, store_id, code columns"""
     # Create sample data for simple upload
