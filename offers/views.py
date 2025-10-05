@@ -110,7 +110,7 @@ class OfferUploadAPIView(CreateAPIView):
     """
     API View for uploading offers via Excel file
     """
-    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication | AdminRoleAuthentication]
     serializer_class = OfferUploaderSerializer
     queryset = Offer.objects.none()
 
@@ -119,7 +119,7 @@ class OfferUploadAPIView(CreateAPIView):
         Handle Excel file upload for offers
         """
         try:
-            serializer = self.get_serializer(data=request.data)
+            serializer = self.get_serializer(data=request.data, context={'request': request})
             serializer.is_valid(raise_exception=True)
             
             # Process the uploaded offers

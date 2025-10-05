@@ -4,6 +4,7 @@ from core.serializers.abstract_serializers import BaseModelSerializer, BaseUploa
 from market.serializers import ProductCodeReadSerializer, ProductReadSerializer
 from offers.models import Offer
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django.apps import apps
@@ -17,6 +18,7 @@ get_model = apps.get_model
 class OfferReadSerializer(BaseModelSerializer):
     product = ProductReadSerializer()
     user = UserReadSerializer()
+    product_code = ProductCodeReadSerializer()
     actual_discount_precentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
     actual_offer_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
@@ -45,6 +47,13 @@ class OfferReadSerializer(BaseModelSerializer):
 
 
 class OfferCreateSerializer(BaseModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=get_model("accounts", "User").objects.select_related("profile").all(),
+        required=False,
+        allow_null=True,
+        write_only=True
+    )
+
     class Meta:
         model = Offer
         fields = [
@@ -55,11 +64,12 @@ class OfferCreateSerializer(BaseModelSerializer):
             "max_amount_per_invoice",
             "operating_number",
             "product_expiry_date",
+            "user",
         ]
         extra_kwargs = {
             "product_code": {
                 "queryset": get_model("market", "StoreProductCode")
-                .objects.select_related("store", "store__user", "store__user__profile", "product")
+                .objects.select_related("store", "product")
                 .all(),
                 "required": True,
             },
@@ -69,14 +79,32 @@ class OfferCreateSerializer(BaseModelSerializer):
         product_code = attrs.get("product_code")
         available_amount = attrs.get("available_amount")
         purchase_discount_percentage = attrs.get("purchase_discount_percentage")
+        specified_user = attrs.get("user")
+
+        # تحديد المستخدم المستهدف
+        request_user = self.context.get('request').user
+        
+        if specified_user is not None:
+            # إذا تم تحديد مستخدم، تحقق من صلاحيات الادمن
+            if request_user.role != 'ADMIN':
+                raise ValidationError({"user": "Only admin can specify a user for offer creation."})
+            
+            # تحقق من أن المستخدم المحدد هو مخزن
+            if specified_user.role != 'STORE':
+                raise ValidationError({"user": "Specified user must be a store."})
+            
+            target_user = specified_user
+        else:
+            # إذا لم يتم تحديد مستخدم، استخدم مخزن المنتج
+            target_user = product_code.store
 
         public_price = product_code.product.public_price
 
         selling_discount_percentage, selling_price = get_selling_data(
-            product_code.product, product_code.store.user, purchase_discount_percentage
+            product_code.product, target_user, purchase_discount_percentage
         )
 
-        attrs["user"] = product_code.store.user
+        attrs["user"] = target_user
         attrs["product"] = product_code.product
         attrs["remaining_amount"] = available_amount
         attrs["selling_discount_percentage"] = selling_discount_percentage
@@ -171,7 +199,7 @@ class OfferUpdateSerializer(BaseModelSerializer):
             "is_max",
             "created_at",
         ]
-        read_only_fields = ["purchase_price", "selling_price" "created_at"]
+        read_only_fields = ["purchase_price", "selling_price", "created_at"]
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -245,12 +273,23 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
                 _("in line {line_number}, Product code must be a valid number.").format(line_number=line_number)
             )
 
-        product_code = (
-            get_model("market", "StoreProductCode")
-            .objects.select_related("product", "store", "store__user")
-            .filter(code=code_value, store__user=self.user)
-            .first()
-        )
+        # Admin can upload for any store, others can only upload for their own store
+        if hasattr(self, 'request_user') and self.request_user.role == 'ADMIN':
+            # Admin can upload for any store
+            product_code = (
+                get_model("market", "StoreProductCode")
+                .objects.select_related("product", "store")
+                .filter(code=code_value, store_id=self.user.id)
+                .first()
+            )
+        else:
+            # Regular users can only upload for their own store
+            product_code = (
+                get_model("market", "StoreProductCode")
+                .objects.select_related("product", "store")
+                .filter(code=code_value, store_id=self.user.id)
+                .first()
+            )
 
         if product_code is None:
             raise serializers.ValidationError(
@@ -363,9 +402,23 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
 
     def validate_column_product_expiry_date(self, value, line_number):
         if value is not None:
-            if value.date() < timezone.now().date():
+            try:
+                # Convert string to date if needed
+                if isinstance(value, str):
+                    from datetime import datetime
+                    date_value = datetime.strptime(value, '%Y-%m-%d').date()
+                else:
+                    date_value = value.date() if hasattr(value, 'date') else value
+                
+                if date_value < timezone.now().date():
+                    raise serializers.ValidationError(
+                        _("in line {line_number}, Product expiry date should not be in the past.").format(
+                            line_number=line_number
+                        )
+                    )
+            except ValueError:
                 raise serializers.ValidationError(
-                    _("in line {line_number}, Product expiry date should not be in the past.").format(
+                    _("in line {line_number}, Invalid date format. Use YYYY-MM-DD.").format(
                         line_number=line_number
                     )
                 )
@@ -420,6 +473,10 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
 
         self.user = user
         self.user_profile = user_profile
+        
+        # Store the request user for admin checks
+        if hasattr(self.context.get('request'), 'user'):
+            self.request_user = self.context['request'].user
 
         return super().validate(attrs)
 
