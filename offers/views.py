@@ -107,9 +107,35 @@ class OfferCreateAPIView(CreateAPIView):
 
 
 class OfferUploadAPIView(CreateAPIView):
+    """
+    API View for uploading offers via Excel file
+    """
     permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
     serializer_class = OfferUploaderSerializer
     queryset = Offer.objects.none()
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle Excel file upload for offers
+        """
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            # Process the uploaded offers
+            offers = serializer.save()
+            
+            return Response({
+                'message': f'تم رفع {len(offers)} عرض بنجاح',
+                'count': len(offers),
+                'offers': [offer.id for offer in offers]
+            }, status=201)
+            
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء رفع العروض',
+                'details': str(e)
+            }, status=400)
 
 
 class OfferUpdateAPIView(UpdateAPIView):
