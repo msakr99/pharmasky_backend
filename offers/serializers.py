@@ -78,13 +78,7 @@ class OfferCreateSerializer(BaseModelSerializer):
             "user",
         ]
         extra_kwargs = {
-            "product_code": {
-                "queryset": get_model("market", "StoreProductCode")
-                .objects.select_related("store", "product")
-                .all(),
-                "required": False,
-                "allow_null": True,
-            },
+            # تم إزالة product_code من هنا لأنه أصبح IntegerField بدلاً من PrimaryKeyRelatedField
         }
 
     def validate(self, attrs):
@@ -108,8 +102,12 @@ class OfferCreateSerializer(BaseModelSerializer):
                 ).get(code=product_code_value)
                 target_user = final_product_code.store
             except get_model("market", "StoreProductCode").DoesNotExist:
+                # جلب بعض الأكواد المتاحة للمساعدة
+                available_codes = get_model("market", "StoreProductCode").objects.values_list('code', flat=True)[:5]
+                available_codes_str = ', '.join(map(str, available_codes)) if available_codes else "لا توجد أكواد متاحة"
+                
                 raise ValidationError({
-                    "product_code": f"StoreProductCode with code {product_code_value} not found."
+                    "product_code": f"StoreProductCode with code {product_code_value} not found. Available codes: {available_codes_str}"
                 })
         elif product_id is not None and store_id is not None and code is not None:
             # إنشاء StoreProductCode جديد تلقائياً
