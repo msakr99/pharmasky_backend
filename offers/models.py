@@ -4,7 +4,7 @@ from django.db import models
 
 class Offer(models.Model):
     product_code = models.ForeignKey(
-        "market.ProductCode",
+        "market.StoreProductCode",
         on_delete=models.CASCADE,
         related_name="offers",
         related_query_name="offers",
