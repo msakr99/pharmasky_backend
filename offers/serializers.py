@@ -53,11 +53,19 @@ class OfferCreateSerializer(BaseModelSerializer):
         allow_null=True,
         write_only=True
     )
+    
+    # إضافة حقول بديلة لإنشاء العرض مباشرة
+    product_id = serializers.IntegerField(required=False, write_only=True)
+    store_id = serializers.IntegerField(required=False, write_only=True)
+    code = serializers.IntegerField(required=False, write_only=True)
 
     class Meta:
         model = Offer
         fields = [
             "product_code",
+            "product_id",
+            "store_id", 
+            "code",
             "available_amount",
             "purchase_discount_percentage",
             "min_purchase",
@@ -71,12 +79,16 @@ class OfferCreateSerializer(BaseModelSerializer):
                 "queryset": get_model("market", "StoreProductCode")
                 .objects.select_related("store", "product")
                 .all(),
-                "required": True,
+                "required": False,
+                "allow_null": True,
             },
         }
 
     def validate(self, attrs):
         product_code = attrs.get("product_code")
+        product_id = attrs.get("product_id")
+        store_id = attrs.get("store_id")
+        code = attrs.get("code")
         available_amount = attrs.get("available_amount")
         purchase_discount_percentage = attrs.get("purchase_discount_percentage")
         specified_user = attrs.get("user")
@@ -84,6 +96,46 @@ class OfferCreateSerializer(BaseModelSerializer):
         # تحديد المستخدم المستهدف
         request_user = self.context.get('request').user
         
+        # تحديد StoreProductCode
+        if product_code is not None:
+            # استخدام StoreProductCode موجود
+            final_product_code = product_code
+            target_user = product_code.store
+        elif product_id is not None and store_id is not None and code is not None:
+            # إنشاء StoreProductCode جديد تلقائياً
+            try:
+                product = get_model("market", "Product").objects.get(id=product_id)
+                store = get_model("accounts", "Store").objects.get(id=store_id)
+                
+                # إنشاء أو الحصول على StoreProductCode
+                try:
+                    final_product_code = get_model("market", "StoreProductCode").objects.get(
+                        product=product,
+                        store=store
+                    )
+                    # إذا كان موجود، تحديث الكود
+                    final_product_code.code = code
+                    final_product_code.save()
+                except get_model("market", "StoreProductCode").DoesNotExist:
+                    # إنشاء جديد
+                    final_product_code = get_model("market", "StoreProductCode").objects.create(
+                        product=product,
+                        store=store,
+                        code=code
+                    )
+                
+                target_user = store
+                
+            except get_model("market", "Product").DoesNotExist:
+                raise ValidationError({"product_id": "Product not found."})
+            except get_model("accounts", "Store").DoesNotExist:
+                raise ValidationError({"store_id": "Store not found."})
+        else:
+            raise ValidationError({
+                "product_code": "Either product_code or (product_id, store_id, code) must be provided."
+            })
+        
+        # تحديد المستخدم النهائي
         if specified_user is not None:
             # إذا تم تحديد مستخدم، تحقق من صلاحيات الادمن
             if request_user.role != 'ADMIN':
@@ -94,18 +146,16 @@ class OfferCreateSerializer(BaseModelSerializer):
                 raise ValidationError({"user": "Specified user must be a store."})
             
             target_user = specified_user
-        else:
-            # إذا لم يتم تحديد مستخدم، استخدم مخزن المنتج
-            target_user = product_code.store
 
-        public_price = product_code.product.public_price
+        public_price = final_product_code.product.public_price
 
         selling_discount_percentage, selling_price = get_selling_data(
-            product_code.product, target_user, purchase_discount_percentage
+            final_product_code.product, target_user, purchase_discount_percentage
         )
 
+        attrs["product_code"] = final_product_code
         attrs["user"] = target_user
-        attrs["product"] = product_code.product
+        attrs["product"] = final_product_code.product
         attrs["remaining_amount"] = available_amount
         attrs["selling_discount_percentage"] = selling_discount_percentage
         attrs["selling_price"] = selling_price
