@@ -58,6 +58,9 @@ class OfferCreateSerializer(BaseModelSerializer):
     product_id = serializers.IntegerField(required=False, write_only=True)
     store_id = serializers.IntegerField(required=False, write_only=True)
     code = serializers.IntegerField(required=False, write_only=True)
+    
+    # تعديل product_code ليقبل code بدلاً من معرف StoreProductCode
+    product_code = serializers.IntegerField(required=False, write_only=True, help_text="StoreProductCode code")
 
     class Meta:
         model = Offer
@@ -85,7 +88,7 @@ class OfferCreateSerializer(BaseModelSerializer):
         }
 
     def validate(self, attrs):
-        product_code = attrs.get("product_code")
+        product_code_value = attrs.get("product_code")  # هذا الآن code وليس معرف
         product_id = attrs.get("product_id")
         store_id = attrs.get("store_id")
         code = attrs.get("code")
@@ -97,10 +100,17 @@ class OfferCreateSerializer(BaseModelSerializer):
         request_user = self.context.get('request').user
         
         # تحديد StoreProductCode
-        if product_code is not None:
-            # استخدام StoreProductCode موجود
-            final_product_code = product_code
-            target_user = product_code.store
+        if product_code_value is not None:
+            # البحث عن StoreProductCode باستخدام code
+            try:
+                final_product_code = get_model("market", "StoreProductCode").objects.select_related(
+                    "product", "store"
+                ).get(code=product_code_value)
+                target_user = final_product_code.store
+            except get_model("market", "StoreProductCode").DoesNotExist:
+                raise ValidationError({
+                    "product_code": f"StoreProductCode with code {product_code_value} not found."
+                })
         elif product_id is not None and store_id is not None and code is not None:
             # إنشاء StoreProductCode جديد تلقائياً
             try:
@@ -132,7 +142,7 @@ class OfferCreateSerializer(BaseModelSerializer):
                 raise ValidationError({"store_id": "Store not found."})
         else:
             raise ValidationError({
-                "product_code": "Either product_code or (product_id, store_id, code) must be provided."
+                "product_code": "Either product_code (StoreProductCode code) or (product_id, store_id, code) must be provided."
             })
         
         # تحديد المستخدم النهائي
