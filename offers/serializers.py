@@ -58,8 +58,8 @@ class OfferCreateSerializer(BaseModelSerializer):
         ]
         extra_kwargs = {
             "product_code": {
-                "queryset": get_model("market", "ProductCode")
-                .objects.select_related("user", "user__profile", "product")
+                "queryset": get_model("market", "StoreProductCode")
+                .objects.select_related("store", "store__user", "store__user__profile", "product")
                 .all(),
                 "required": True,
             },
@@ -73,10 +73,10 @@ class OfferCreateSerializer(BaseModelSerializer):
         public_price = product_code.product.public_price
 
         selling_discount_percentage, selling_price = get_selling_data(
-            product_code.product, product_code.user, purchase_discount_percentage
+            product_code.product, product_code.store.user, purchase_discount_percentage
         )
 
-        attrs["user"] = product_code.user
+        attrs["user"] = product_code.store.user
         attrs["product"] = product_code.product
         attrs["remaining_amount"] = available_amount
         attrs["selling_discount_percentage"] = selling_discount_percentage
@@ -246,9 +246,9 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
             )
 
         product_code = (
-            get_model("market", "ProductCode")
-            .objects.select_related("product")
-            .filter(code=code_value, user=self.user)
+            get_model("market", "StoreProductCode")
+            .objects.select_related("product", "store")
+            .filter(code=code_value, store__user=self.user)
             .first()
         )
 
