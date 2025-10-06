@@ -1,4 +1,5 @@
 from decimal import Decimal
+import logging
 from accounts.permissions import *
 from drf_excel.mixins import XLSXFileMixin
 from drf_excel.renderers import XLSXRenderer
@@ -27,6 +28,8 @@ from core.views.abstract_paginations import CustomPageNumberPagination, LargePag
 from rest_framework.exceptions import ValidationError
 
 from offers.utils import delete_offer
+
+logger = logging.getLogger(__name__)
 
 
 class OffersListAPIView(ListAPIView):
@@ -62,8 +65,7 @@ class MaxOfferListAPIView(ListAPIView):
     serializer_class = OfferReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = OfferFilter
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["product__name", "product__e_name"]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = [
         "product__name",
         "product__e_name",
@@ -77,6 +79,9 @@ class MaxOfferListAPIView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        search_term = self.request.query_params.get('search', '').strip()
+        
+        logger.info(f"[MaxOfferListAPIView] User: {user.username}, Search term: '{search_term}'")
 
         actual_discount_precentage = models.F("selling_discount_percentage") - Decimal("0.00")
         actual_offer_price = models.F("selling_price")
@@ -100,6 +105,18 @@ class MaxOfferListAPIView(ListAPIView):
                 actual_offer_price=actual_offer_price,
             )
         )
+        
+        initial_count = queryset.count()
+        logger.info(f"[MaxOfferListAPIView] Initial queryset count: {initial_count}")
+
+        # Apply search filter manually
+        if search_term:
+            queryset = queryset.filter(
+                models.Q(product__name__icontains=search_term) |
+                models.Q(product__e_name__icontains=search_term)
+            )
+            final_count = queryset.count()
+            logger.info(f"[MaxOfferListAPIView] After search filter count: {final_count}")
 
         return queryset
 
