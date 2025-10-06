@@ -3,6 +3,8 @@ from accounts.permissions import *
 from drf_excel.mixins import XLSXFileMixin
 from drf_excel.renderers import XLSXRenderer
 from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, UpdateAPIView
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 from django.db import models
 from offers.filters import OfferFilter
 from offers.models import Offer
@@ -32,6 +34,7 @@ class OffersListAPIView(ListAPIView):
     serializer_class = OfferReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = OfferFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
@@ -59,6 +62,7 @@ class MaxOfferListAPIView(ListAPIView):
     serializer_class = OfferReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = OfferFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
@@ -159,6 +163,7 @@ class OfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
     renderer_classes = [XLSXRenderer]
     filterset_class = OfferFilter
     pagination_class = None
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "id",
@@ -211,6 +216,7 @@ class OfferDownloadPDFAPIView(PDFFileMixin, ListAPIView):
     serializer_class = OfferPDFReadSerializer
     template_name = "market/pdf/store_offers.html"
     template_context = {"timestamp": timezone.now().strftime("%d-%m-%Y")}
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["product__name", "product__e_name"]
 
     def get_queryset(self):
@@ -240,6 +246,7 @@ class UserOfferListAPIView(ListAPIView):
     permission_classes = [PharmacyRoleAuthentication]
     serializer_class = OfferReadSerializer
     filterset_class = OfferFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
