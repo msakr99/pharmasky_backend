@@ -32,7 +32,7 @@ class OffersListAPIView(ListAPIView):
     serializer_class = OfferReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = OfferFilter
-    search_fields = ["^product__name", "^product__e_name"]
+    search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
         "product__e_name",
@@ -59,7 +59,7 @@ class MaxOfferListAPIView(ListAPIView):
     serializer_class = OfferReadSerializer
     pagination_class = CustomPageNumberPagination
     filterset_class = OfferFilter
-    search_fields = ["^product__name", "^product__e_name"]
+    search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
         "product__e_name",
@@ -101,7 +101,7 @@ class MaxOfferListAPIView(ListAPIView):
 
 
 class OfferCreateAPIView(CreateAPIView):
-    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication | AdminRoleAuthentication]
     serializer_class = OfferCreateSerializer
     queryset = Offer.objects.none()
 
@@ -159,7 +159,7 @@ class OfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
     renderer_classes = [XLSXRenderer]
     filterset_class = OfferFilter
     pagination_class = None
-    search_fields = ["^product__name", "^product__e_name"]
+    search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "id",
         "product__name",
@@ -211,7 +211,7 @@ class OfferDownloadPDFAPIView(PDFFileMixin, ListAPIView):
     serializer_class = OfferPDFReadSerializer
     template_name = "market/pdf/store_offers.html"
     template_context = {"timestamp": timezone.now().strftime("%d-%m-%Y")}
-    search_fields = ["^product__name", "^product__e_name"]
+    search_fields = ["product__name", "product__e_name"]
 
     def get_queryset(self):
         queryset = (
@@ -240,7 +240,7 @@ class UserOfferListAPIView(ListAPIView):
     permission_classes = [PharmacyRoleAuthentication]
     serializer_class = OfferReadSerializer
     filterset_class = OfferFilter
-    search_fields = ["^product__name", "^product__e_name"]
+    search_fields = ["product__name", "product__e_name"]
     ordering_fields = [
         "product__name",
         "product__e_name",
