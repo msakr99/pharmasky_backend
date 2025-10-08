@@ -1,7 +1,7 @@
 from decimal import Decimal
 from accounts.serializers import UserReadSerializer
 from core.serializers.abstract_serializers import BaseModelSerializer, BaseUploaderSerializer
-from market.serializers import ProductCodeReadSerializer, ProductReadSerializer
+from market.serializers import StoreProductCodeReadSerializer, ProductReadSerializer
 from offers.models import Offer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -18,7 +18,7 @@ get_model = apps.get_model
 class OfferReadSerializer(BaseModelSerializer):
     product = ProductReadSerializer()
     user = UserReadSerializer()
-    product_code = ProductCodeReadSerializer()
+    product_code = StoreProductCodeReadSerializer()
     actual_discount_precentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
     actual_offer_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
@@ -233,7 +233,7 @@ class UserOfferCreateSerializer(BaseModelSerializer):
 
 
 class OfferUpdateSerializer(BaseModelSerializer):
-    product_code = ProductCodeReadSerializer(read_only=True)
+    product_code = StoreProductCodeReadSerializer(read_only=True)
     product = ProductReadSerializer(read_only=True)
     user = UserReadSerializer(read_only=True)
 

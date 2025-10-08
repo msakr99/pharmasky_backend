@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.apps import apps
 from django.db import transaction
-from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode, StoreProductCodeUpload, Store
+from market.models import Category, Company, PharmacyProductWishList, Product, ProductCode, StoreProductCode, StoreProductCodeUpload, Store
 from market.utils import update_product
 
 get_model = apps.get_model
@@ -138,6 +138,15 @@ class ProductCodeCreateUpdateSerializer(BaseModelSerializer):
         if not attrs.get("product") or not attrs.get("user"):
             raise ValidationError(_("Product and User are required to create a Product Code."))
         return super().validate(attrs)
+
+
+class StoreProductCodeReadSerializer(BaseModelSerializer):
+    product = ProductReadSerializer(fields=["id", "name", "e_name", "public_price"])
+    store = UserReadSerializer(fields=["id", "name", "e_name"])
+
+    class Meta:
+        model = StoreProductCode
+        fields = ["id", "product", "store", "code"]
 
 
 class PharmacyProductWishListSerializer(BaseModelSerializer):
