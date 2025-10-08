@@ -35,6 +35,11 @@ urlpatterns = [
         name="max-offers-excel-list-view",
     ),
     path(
+        "max-offers/pdf/",
+        views.OfferDownloadPDFAPIView.as_view(),
+        name="max-offers-pdf-list-view",
+    ),
+    path(
         "offers/upload/",
         views.OfferUploadAPIView.as_view(),
         name="offers-upload-view",
