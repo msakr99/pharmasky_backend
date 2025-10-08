@@ -199,7 +199,7 @@ class OfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
         return get_excel_header(tab_name="Max Offers Report", header_title="Max Offers Report")
 
     def get_column_header(self):
-        titles = ["Product code", "Product name", "Price", "Discount"]
+        titles = ["Product code", "Product name", "Seller", "Price", "Discount %", "Actual Discount %", "Actual Price", "Payment Period"]
         return get_excel_column_header(titles=titles)
 
     def get_filename(self, request=None, *args, **kwargs):
@@ -207,24 +207,63 @@ class OfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
         return f"Pharmasky Max offers report - {NOW}.xlsx"
 
     def get_queryset(self):
-        queryset = (
-            Offer.objects.select_related("product_code")
-            .filter(is_max=True)
-            .annotate(
+        # Get payment_period from query params
+        payment_period_id = self.request.query_params.get('payment_period', None)
+        
+        # Start building the queryset
+        queryset = Offer.objects.select_related("product_code", "product", "user").filter(is_max=True)
+        
+        # Calculate actual discount and price if payment_period is provided
+        if payment_period_id:
+            try:
+                from profiles.models import PaymentPeriod
+                payment_period = PaymentPeriod.objects.get(id=payment_period_id)
+                additional_fees_percentage = payment_period.addition_percentage
+                
+                queryset = queryset.annotate(
+                    product_seller_code=models.F("product_code__code"),
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage") - additional_fees_percentage,
+                    actual_offer_price=models.F("product__public_price") * (1 - ((models.F("selling_discount_percentage") - additional_fees_percentage) / 100)),
+                    payment_period_name=models.Value(payment_period.name, output_field=models.CharField()),
+                )
+            except Exception:
+                # If payment_period not found, proceed without it
+                queryset = queryset.annotate(
+                    product_seller_code=models.F("product_code__code"),
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage"),
+                    actual_offer_price=models.F("selling_price"),
+                    payment_period_name=models.Value("", output_field=models.CharField()),
+                )
+        else:
+            # No payment period, use default values
+            queryset = queryset.annotate(
                 product_seller_code=models.F("product_code__code"),
                 product_name=models.F("product__name"),
                 seller_name=models.F("user__name"),
                 public_price=models.F("product__public_price"),
+                actual_discount_percentage=models.F("selling_discount_percentage"),
+                actual_offer_price=models.F("selling_price"),
+                payment_period_name=models.Value("", output_field=models.CharField()),
             )
-            .values(
-                "product_seller_code",
-                "product_name",
-                "seller_name",
-                "public_price",
-                "selling_discount_percentage",
-                "created_at",
-            )
+        
+        queryset = queryset.values(
+            "product_seller_code",
+            "product_name",
+            "seller_name",
+            "public_price",
+            "selling_discount_percentage",
+            "actual_discount_percentage",
+            "actual_offer_price",
+            "payment_period_name",
+            "created_at",
         )
+        
         return queryset
 
 
@@ -238,20 +277,63 @@ class OfferDownloadPDFAPIView(PDFFileMixin, ListAPIView):
     search_fields = ["product__name", "product__e_name"]
 
     def get_queryset(self):
-        queryset = (
-            Offer.objects.select_related("product_code")
-            .filter(is_max=True)
-            .annotate(
+        # Get payment_period from query params
+        payment_period_id = self.request.query_params.get('payment_period', None)
+        
+        # Start building the queryset
+        queryset = Offer.objects.select_related("product_code", "product", "user").filter(is_max=True)
+        
+        # Calculate actual discount and price if payment_period is provided
+        if payment_period_id:
+            try:
+                from profiles.models import PaymentPeriod
+                payment_period = PaymentPeriod.objects.get(id=payment_period_id)
+                additional_fees_percentage = payment_period.addition_percentage
+                
+                queryset = queryset.annotate(
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage") - additional_fees_percentage,
+                    actual_offer_price=models.F("product__public_price") * (1 - ((models.F("selling_discount_percentage") - additional_fees_percentage) / 100)),
+                    payment_period_name=models.Value(payment_period.name, output_field=models.CharField()),
+                )
+            except Exception:
+                # If payment_period not found, proceed without it
+                queryset = queryset.annotate(
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage"),
+                    actual_offer_price=models.F("selling_price"),
+                    payment_period_name=models.Value("", output_field=models.CharField()),
+                )
+        else:
+            # No payment period, use default values
+            queryset = queryset.annotate(
                 product_name=models.F("product__name"),
+                seller_name=models.F("user__name"),
                 public_price=models.F("product__public_price"),
+                actual_discount_percentage=models.F("selling_discount_percentage"),
+                actual_offer_price=models.F("selling_price"),
+                payment_period_name=models.Value("", output_field=models.CharField()),
             )
-            .values("product_name", "public_price", "selling_discount_percentage")
+        
+        queryset = queryset.values(
+            "product_name",
+            "seller_name",
+            "public_price",
+            "selling_discount_percentage",
+            "actual_discount_percentage",
+            "actual_offer_price",
+            "payment_period_name",
         )
+        
         return queryset
 
     def get_filename(self, request=None, *args, **kwargs):
         NOW = timezone.now().strftime("%d-%m-%Y")
-        return f"Pharmasky Max offers report - {NOW}.xlsx"
+        return f"Pharmasky Max offers report - {NOW}.pdf"
 
     def get(self, request, *args, **kwargs):
         activate("ar")

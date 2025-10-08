@@ -269,27 +269,47 @@ class OfferUpdateSerializer(BaseModelSerializer):
 class OfferExcelReadSerialzier(BaseModelSerializer):
     product_seller_code = serializers.CharField(read_only=True)
     product_name = serializers.CharField(read_only=True)
+    seller_name = serializers.CharField(read_only=True)
     public_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     selling_discount_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    actual_discount_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True, required=False)
+    actual_offer_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, required=False)
+    payment_period_name = serializers.CharField(read_only=True, required=False)
 
     class Meta:
         model = Offer
         fields = [
             "product_seller_code",
             "product_name",
+            "seller_name",
             "public_price",
             "selling_discount_percentage",
+            "actual_discount_percentage",
+            "actual_offer_price",
+            "payment_period_name",
         ]
 
 
 class OfferPDFReadSerializer(BaseModelSerializer):
     product_name = serializers.CharField(read_only=True)
+    seller_name = serializers.CharField(read_only=True, required=False)
     public_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     selling_discount_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    actual_discount_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True, required=False)
+    actual_offer_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, required=False)
+    payment_period_name = serializers.CharField(read_only=True, required=False)
 
     class Meta:
         model = Offer
-        fields = ["product_name", "public_price", "selling_discount_percentage"]
+        fields = [
+            "product_name", 
+            "seller_name",
+            "public_price", 
+            "selling_discount_percentage",
+            "actual_discount_percentage",
+            "actual_offer_price",
+            "payment_period_name",
+        ]
 
 
 class OfferUploaderSerializer(BaseUploaderSerializer):
