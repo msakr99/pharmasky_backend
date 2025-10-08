@@ -1,6 +1,7 @@
 from decimal import Decimal
 import logging
 from accounts.permissions import *
+from accounts.choices import Role
 from drf_excel.mixins import XLSXFileMixin
 from drf_excel.renderers import XLSXRenderer
 from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, UpdateAPIView
