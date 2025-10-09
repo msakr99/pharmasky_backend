@@ -730,6 +730,7 @@ class SaleInvoiceCheckCloseabilityAPIView(RetrieveAPIView):
     Check if invoice can be closed and return detailed information
     """
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    serializer_class = SaleInvoiceReadSerializer
     
     def get_queryset(self):
         user = self.request.user
@@ -753,65 +754,76 @@ class SaleInvoiceCheckCloseabilityAPIView(RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         from inventory.models import InventoryItem
         from inventory.utils import get_or_create_main_inventory
+        from django.db.models import Sum
         
-        invoice = self.get_object()
-        
-        result = {
-            "invoice_id": invoice.id,
-            "current_status": invoice.status,
-            "can_close": True,
-            "issues": []
-        }
-        
-        # Check items status
-        pending_items = invoice.items.select_related('product').exclude(
-            status=SaleInvoiceItemStatusChoice.RECEIVED
-        )
-        
-        if pending_items.exists():
-            result["can_close"] = False
-            result["issues"].append({
-                "type": "pending_items",
-                "message": "Not all items are in Received status",
-                "details": [
-                    {
-                        "item_id": item.id,
-                        "product_name": item.product.name,
-                        "current_status": item.status,
-                        "required_status": "received"
-                    }
-                    for item in pending_items
-                ]
-            })
-        
-        # Check inventory
-        inventory = get_or_create_main_inventory()
-        inventory_issues = []
-        
-        for item in invoice.items.select_related('product').all():
-            available_quantity = InventoryItem.objects.filter(
-                inventory=inventory,
-                product=item.product
-            ).aggregate(total=models.Sum('remaining_quantity'))['total'] or 0
+        try:
+            invoice = self.get_object()
             
-            if available_quantity < item.quantity:
-                inventory_issues.append({
-                    "product_id": item.product.id,
-                    "product_name": item.product.name,
-                    "required": item.quantity,
-                    "available": available_quantity,
-                    "shortage": item.quantity - available_quantity
+            result = {
+                "invoice_id": invoice.id,
+                "current_status": invoice.status,
+                "can_close": True,
+                "issues": []
+            }
+            
+            # Check items status
+            pending_items = invoice.items.select_related('product').exclude(
+                status=SaleInvoiceItemStatusChoice.RECEIVED
+            )
+            
+            if pending_items.exists():
+                result["can_close"] = False
+                result["issues"].append({
+                    "type": "pending_items",
+                    "message": "Not all items are in Received status",
+                    "details": [
+                        {
+                            "item_id": item.id,
+                            "product_name": item.product.name,
+                            "current_status": item.status,
+                            "required_status": "received"
+                        }
+                        for item in pending_items
+                    ]
                 })
-        
-        if inventory_issues:
-            result["can_close"] = False
-            result["issues"].append({
-                "type": "insufficient_inventory",
-                "message": "Not enough inventory available",
-                "details": inventory_issues
-            })
-        
-        return Response(result)
+            
+            # Check inventory
+            inventory = get_or_create_main_inventory()
+            inventory_issues = []
+            
+            for item in invoice.items.select_related('product').all():
+                available_quantity = InventoryItem.objects.filter(
+                    inventory=inventory,
+                    product=item.product
+                ).aggregate(total=Sum('remaining_quantity'))['total'] or 0
+                
+                if available_quantity < item.quantity:
+                    inventory_issues.append({
+                        "product_id": item.product.id,
+                        "product_name": item.product.name,
+                        "required": item.quantity,
+                        "available": available_quantity,
+                        "shortage": item.quantity - available_quantity
+                    })
+            
+            if inventory_issues:
+                result["can_close"] = False
+                result["issues"].append({
+                    "type": "insufficient_inventory",
+                    "message": "Not enough inventory available",
+                    "details": inventory_issues
+                })
+            
+            return Response(result)
+            
+        except Exception as e:
+            # Return detailed error instead of 500
+            import traceback
+            return Response({
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
