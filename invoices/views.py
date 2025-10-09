@@ -755,6 +755,7 @@ class SaleInvoiceCheckCloseabilityAPIView(RetrieveAPIView):
         from inventory.models import InventoryItem
         from inventory.utils import get_or_create_main_inventory
         from django.db.models import Sum
+        from invoices.choices import SaleInvoiceItemStatusChoice
         
         try:
             invoice = self.get_object()
