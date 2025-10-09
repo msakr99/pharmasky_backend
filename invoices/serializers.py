@@ -748,6 +748,10 @@ class SaleInvoiceReadSerializer(BaseModelSerializer):
     items_url = QueryParameterHyperlinkedIdentityField(
         view_name="invoices:sale-invoice-items-list-view", query_param="invoice"
     )
+    average_discount_percentage = serializers.SerializerMethodField()
+    total_public_price = serializers.SerializerMethodField()
+    total_profit = serializers.SerializerMethodField()
+    total_purchase_cost = serializers.SerializerMethodField()
 
     class Meta:
         model = SaleInvoice
@@ -758,13 +762,98 @@ class SaleInvoiceReadSerializer(BaseModelSerializer):
             "items_count",
             "total_quantity",
             "total_price",
+            "total_public_price",
+            "total_purchase_cost",
+            "total_profit",
             "status",
             "status_label",
             "created_at",
             "items",
             "deleted_items",
             "items_url",
+            "average_discount_percentage",
         ]
+
+    def get_average_discount_percentage(self, instance):
+        """
+        Calculate the weighted average discount percentage for the invoice.
+        Formula: Sum(quantity * selling_discount_percentage * public_price) / Sum(quantity * public_price)
+        """
+        from market.models import Product
+        
+        items = instance.items.select_related("product").all()
+        
+        if not items:
+            return Decimal("0.00")
+        
+        total_discount = Decimal("0.00")
+        total_public_price = Decimal("0.00")
+        
+        for item in items:
+            quantity_price = item.quantity * item.product.public_price
+            quantity_discount = quantity_price * (item.selling_discount_percentage / 100)
+            
+            total_discount += quantity_discount
+            total_public_price += quantity_price
+        
+        if total_public_price == 0:
+            return Decimal("0.00")
+        
+        average_discount = (total_discount / total_public_price) * 100
+        return Decimal(average_discount).quantize(Decimal("0.00"))
+
+    def get_total_public_price(self, instance):
+        """
+        Calculate the total public price (before discount) for all items in the invoice.
+        Formula: Sum(quantity * product.public_price)
+        """
+        items = instance.items.select_related("product").all()
+        
+        if not items:
+            return Decimal("0.00")
+        
+        total = Decimal("0.00")
+        
+        for item in items:
+            total += item.quantity * item.product.public_price
+        
+        return Decimal(total).quantize(Decimal("0.00"))
+
+    def get_total_purchase_cost(self, instance):
+        """
+        Calculate the total purchase cost for all items in the invoice.
+        Formula: Sum(quantity * purchase_price)
+        """
+        items = instance.items.select_related("product").all()
+        
+        if not items:
+            return Decimal("0.00")
+        
+        total = Decimal("0.00")
+        
+        for item in items:
+            total += item.quantity * item.purchase_price
+        
+        return Decimal(total).quantize(Decimal("0.00"))
+
+    def get_total_profit(self, instance):
+        """
+        Calculate the total profit for the invoice.
+        Profit = Total Selling Price - Total Purchase Cost
+        Formula: Sum(quantity * (selling_price - purchase_price))
+        """
+        items = instance.items.select_related("product").all()
+        
+        if not items:
+            return Decimal("0.00")
+        
+        total_profit = Decimal("0.00")
+        
+        for item in items:
+            item_profit = (item.selling_price - item.purchase_price) * item.quantity
+            total_profit += item_profit
+        
+        return Decimal(total_profit).quantize(Decimal("0.00"))
 
 
 class SaleInvoiceCreateSerializer(BaseModelSerializer):

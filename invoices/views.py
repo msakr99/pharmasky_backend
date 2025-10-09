@@ -545,6 +545,11 @@ class SaleInvoiceListAPIView(ListAPIView):
         user = self.request.user
         queryset = SaleInvoice.objects.select_related(
             "user", "user__profile", "user__profile__payment_period", "seller"
+        ).prefetch_related(
+            models.Prefetch(
+                "items", 
+                queryset=SaleInvoiceItem.objects.select_related("product")
+            )
         ).all()
 
         if user.is_superuser:
