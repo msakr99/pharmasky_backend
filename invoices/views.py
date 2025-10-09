@@ -849,6 +849,30 @@ class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
                 queryset = queryset.none()
 
         return queryset
+    
+    def update(self, request, *args, **kwargs):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        import traceback
+        
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            
+            # Success response
+            return Response(serializer.data)
+            
+        except DRFValidationError as e:
+            # Re-raise DRF validation errors (will be 400)
+            raise
+        except Exception as e:
+            # Catch any other errors and return detailed information
+            return Response({
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SaleInvoiceItemListAPIView(ListAPIView):
