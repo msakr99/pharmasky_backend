@@ -196,7 +196,7 @@ def get_allowed_status_changes(status):
     return f_allowed_statuses, b_allowed_statuses
 
 
-def update_purchase_invoice_item(item, data, update_invoice=True):
+def update_purchase_invoice_item(item, data, update_invoice=True, track_quantity_reduction=True):
     product = item.product
 
     data.pop("invoice", None)
@@ -239,6 +239,12 @@ def update_purchase_invoice_item(item, data, update_invoice=True):
         old_sub_total = item.sub_total
         sub_total = Decimal(item.selling_price * item.quantity).quantize(Decimal("0.00"))
         item.sub_total = sub_total
+
+    # Track quantity reduction in deleted_items
+    if track_quantity_reduction and old_quantity is not None and old_quantity > item.quantity:
+        reduced_quantity = old_quantity - item.quantity
+        PurchaseInvoiceDeletedItem = get_model("invoices", "PurchaseInvoiceDeletedItem")
+        PurchaseInvoiceDeletedItem.objects.create_for_quantity_reduction(item, reduced_quantity)
 
     item.save()
 
@@ -437,7 +443,7 @@ def create_sale_invoice_item(data, update_invoice=True, update_purchase_invoice=
     return instance
 
 
-def update_sale_invoice_item(item, data, update_invoice=True):
+def update_sale_invoice_item(item, data, update_invoice=True, track_quantity_reduction=True):
     product = item.product
 
     data.pop("invoice", None)
@@ -480,6 +486,12 @@ def update_sale_invoice_item(item, data, update_invoice=True):
         old_sub_total = item.sub_total
         sub_total = Decimal(item.selling_price * item.quantity).quantize(Decimal("0.00"))
         item.sub_total = sub_total
+
+    # Track quantity reduction in deleted_items
+    if track_quantity_reduction and old_quantity is not None and old_quantity > item.quantity:
+        reduced_quantity = old_quantity - item.quantity
+        SaleInvoiceDeletedItem = get_model("invoices", "SaleInvoiceDeletedItem")
+        SaleInvoiceDeletedItem.objects.create_for_quantity_reduction(item, reduced_quantity)
 
     item.save()
 
