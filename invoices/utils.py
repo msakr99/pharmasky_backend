@@ -373,10 +373,77 @@ def create_sale_invoice(data):
 
 
 def close_sale_invoice(invoice, update_account=True, update_inventory=True):
-    pending_action_items = invoice.items.exclude(status=PurchaseInvoiceItemStatusChoice.RECEIVED)
+    from django.db.models import Sum
+    from inventory.models import InventoryItem
+    
+    pending_action_items = invoice.items.exclude(status=SaleInvoiceItemStatusChoice.RECEIVED)
 
     if pending_action_items.exists():
-        raise ValidationError({"detail": "Cannot close invoice with pending action items."})
+        # Build detailed message about pending items
+        pending_details = []
+        for item in pending_action_items:
+            pending_details.append(
+                f"• {item.product.name}: الحالة الحالية ({item.get_status_display()}) - يجب تغييرها إلى (Received)"
+            )
+        
+        error_message = (
+            "❌ لا يمكن إغلاق الفاتورة - يجب أن تكون جميع العناصر في حالة Received:\n" + 
+            "\n".join(pending_details)
+        )
+        
+        raise ValidationError({
+            "detail": error_message,
+            "pending_items": [
+                {
+                    "item_id": item.id,
+                    "product_name": item.product.name,
+                    "current_status": item.status,
+                    "current_status_label": item.get_status_display(),
+                    "required_status": "received"
+                }
+                for item in pending_action_items
+            ]
+        })
+
+    # Check inventory availability before closing
+    if update_inventory:
+        inventory = get_or_create_main_inventory()
+        inventory_issues = []
+        
+        for item in invoice.items.all():
+            available_quantity = InventoryItem.objects.filter(
+                inventory=inventory,
+                product=item.product
+            ).aggregate(total=Sum('remaining_quantity'))['total'] or 0
+            
+            if available_quantity < item.quantity:
+                shortage = item.quantity - available_quantity
+                inventory_issues.append({
+                    "product_id": item.product.id,
+                    "product_name": item.product.name,
+                    "required": item.quantity,
+                    "available": available_quantity,
+                    "shortage": shortage
+                })
+        
+        if inventory_issues:
+            # Build detailed error message
+            error_details = []
+            for issue in inventory_issues:
+                error_details.append(
+                    f"• {issue['product_name']}: يحتاج {issue['required']} لكن متوفر {issue['available']} (نقص: {issue['shortage']})"
+                )
+            
+            error_message = (
+                "❌ لا يمكن إغلاق الفاتورة - نقص في المخزون:\n" + 
+                "\n".join(error_details)
+            )
+            
+            raise ValidationError({
+                "detail": error_message,
+                "inventory_issues": inventory_issues,
+                "can_close": False
+            })
 
     old_status = invoice.status
     invoice.status = SaleInvoiceStatusChoice.CLOSED
@@ -386,8 +453,9 @@ def close_sale_invoice(invoice, update_account=True, update_inventory=True):
         create_transaction(invoice.transaction_data)
 
     if update_inventory and old_status != invoice.status:
+        inventory = get_or_create_main_inventory()
         for item in invoice.items.all():
-            deduct_product_amount(item.product, item.quantity)
+            deduct_product_amount(item.product, item.quantity, inventory)
 
     return invoice
 

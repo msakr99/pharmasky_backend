@@ -706,7 +706,7 @@ class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = SaleInvoice.objects.select_related("user", "seller").all()
+        queryset = SaleInvoice.objects.select_related("user", "seller").prefetch_related("items__product").all()
 
         if user.is_superuser:
             return queryset
@@ -722,6 +722,27 @@ class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
                 queryset = queryset.none()
 
         return queryset
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # Add success details
+        response_data = serializer.data
+        
+        if instance.status == SaleInvoiceStatusChoice.CLOSED:
+            response_data['success_details'] = {
+                "message": "✅ تم إغلاق الفاتورة بنجاح",
+                "invoice_id": instance.id,
+                "total_price": str(instance.total_price),
+                "items_count": instance.items_count,
+                "total_quantity": instance.total_quantity,
+                "closed_at": instance.created_at.isoformat()
+            }
+
+        return Response(response_data)
 
 
 class SaleInvoiceItemListAPIView(ListAPIView):
