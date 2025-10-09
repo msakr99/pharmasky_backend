@@ -1020,14 +1020,15 @@ class SaleInvoicePDFSerializer(BaseModelSerializer):
             )
 
         def get_average_discount_percentage(self, instance):
-            average_discount_percentage = self.context.get("average_discount_percentage")
-            return Decimal(average_discount_percentage).quantize(Decimal("0.00"))
+            average_discount_percentage = self.context.get("average_discount_percentage", 0)
+            # Convert from decimal (0-1) to percentage (0-100)
+            percentage = Decimal(average_discount_percentage) * 100
+            return percentage.quantize(Decimal("0.00"))
 
         def get_total_price(self, instance):
-            average_discount_percentage = self.context.get("average_discount_percentage")
-            total_price = (
-                instance.quantity * instance.product.public_price * ((100 - average_discount_percentage) / 100)
-            )
+            average_discount_percentage = self.context.get("average_discount_percentage", 0)
+            # average_discount_percentage is already a decimal (0-1), not percentage
+            total_price = instance.quantity * instance.product.public_price * (1 - Decimal(average_discount_percentage))
             return Decimal(total_price).quantize(Decimal("0.00"))
 
     details_serializer = SaleInvoiceItemubReadSerializer
@@ -1038,7 +1039,7 @@ class SaleInvoicePDFSerializer(BaseModelSerializer):
     delivery_name = serializers.CharField(read_only=True)
     balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     prev_balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    average_discount_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    average_discount_percentage = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
     total_public_price = serializers.SerializerMethodField()
 
@@ -1061,12 +1062,18 @@ class SaleInvoicePDFSerializer(BaseModelSerializer):
             "total_public_price",
         ]
 
+    def get_average_discount_percentage(self, instance):
+        average_discount = self.context.get("average_discount_percentage", 0)
+        # Convert from decimal (0-1) to percentage (0-100)
+        percentage = Decimal(average_discount) * 100
+        return percentage.quantize(Decimal("0.00"))
+
     def get_items(self, instance):
         items = self.context.get("items", [])
         return self.details_serializer(items, many=True, context=self.context).data
 
     def get_total_public_price(self, instance):
-        total_public_price = self.context.get("total_public_price", None)
+        total_public_price = self.context.get("total_public_price", 0)
         return total_public_price
 
 
@@ -1075,7 +1082,7 @@ class SaleInvoiceStateUpdateSerializer(BaseModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
-        model = SaleInvoiceItem
+        model = SaleInvoice
         fields = ["status", "status_label"]
 
     def update(self, instance, validated_data):

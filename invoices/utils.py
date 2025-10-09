@@ -385,34 +385,19 @@ def close_sale_invoice(invoice, update_account=True, update_inventory=True):
         # Convert to list to avoid QuerySet re-evaluation
         pending_items_list = list(pending_action_items)
         
-        # Build detailed message about pending items
-        pending_details = []
+        # Build list of pending items
         pending_items_data = []
         
         for item in pending_items_list:
-            try:
-                status_label = item.get_status_display()
-            except:
-                status_label = item.status
-            
-            pending_details.append(
-                f"• {item.product.name}: الحالة الحالية ({status_label}) - يجب تغييرها إلى (Received)"
-            )
             pending_items_data.append({
                 "item_id": item.id,
                 "product_name": item.product.name,
                 "current_status": item.status,
-                "current_status_label": status_label,
                 "required_status": "received"
             })
         
-        error_message = (
-            "❌ لا يمكن إغلاق الفاتورة - يجب أن تكون جميع العناصر في حالة Received:\n" + 
-            "\n".join(pending_details)
-        )
-        
         raise ValidationError({
-            "detail": error_message,
+            "detail": "Cannot close invoice with pending action items.",
             "pending_items": pending_items_data
         })
 
@@ -438,20 +423,8 @@ def close_sale_invoice(invoice, update_account=True, update_inventory=True):
                 })
         
         if inventory_issues:
-            # Build detailed error message
-            error_details = []
-            for issue in inventory_issues:
-                error_details.append(
-                    f"• {issue['product_name']}: يحتاج {issue['required']} لكن متوفر {issue['available']} (نقص: {issue['shortage']})"
-                )
-            
-            error_message = (
-                "❌ لا يمكن إغلاق الفاتورة - نقص في المخزون:\n" + 
-                "\n".join(error_details)
-            )
-            
             raise ValidationError({
-                "detail": error_message,
+                "detail": "Insufficient inventory to close invoice.",
                 "inventory_issues": inventory_issues,
                 "can_close": False
             })

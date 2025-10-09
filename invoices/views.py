@@ -680,24 +680,138 @@ class SaleInvoiceDownloadAPIView(PDFFileMixin, RetrieveAPIView):
             .filter(invoice_id=self.kwargs.get(self.lookup_field))
         )
         aggregates = items.aggregate(models.Sum("quantity_discount"), models.Sum("quantity_price"))
-        total_public_price = aggregates["quantity_price__sum"]
+        total_public_price = aggregates["quantity_price__sum"] or 0
+        total_discount = aggregates["quantity_discount__sum"] or 0
+        
+        # Calculate average discount safely
+        if total_public_price > 0:
+            average_discount = total_discount / total_public_price
+        else:
+            average_discount = 0
 
         ctx.update(
             {
                 "items": items,
                 "total_public_price": total_public_price,
-                "average_discount_percentage": aggregates["quantity_discount__sum"] / total_public_price,
+                "average_discount_percentage": average_discount,
             }
         )
 
         return ctx
 
     def get_filename(self, request=None, *args, **kwargs):
-        return "Inoivce No. {id}.pdf".format(id=self.kwargs.get(self.lookup_field))
+        from datetime import datetime
+        
+        # Get the invoice to access customer name and date
+        invoice_id = self.kwargs.get(self.lookup_field)
+        try:
+            invoice = SaleInvoice.objects.select_related('user').get(id=invoice_id)
+            customer_name = invoice.user.name
+            invoice_date = invoice.created_at.strftime('%Y-%m-%d')
+            
+            # Clean customer name for filename (remove invalid characters)
+            import re
+            clean_name = re.sub(r'[<>:"/\\|?*]', '', customer_name)
+            clean_name = clean_name.strip()[:50]  # Limit length
+            
+            filename = f"فاتورة_{clean_name}_{invoice_date}.pdf"
+            return filename
+        except:
+            # Fallback to invoice number if something goes wrong
+            return f"Invoice_{invoice_id}.pdf"
 
     def get(self, request, *args, **kwargs):
         activate("ar")
         return super().get(request, *args, **kwargs)
+
+
+class SaleInvoiceCheckCloseabilityAPIView(RetrieveAPIView):
+    """
+    Check if invoice can be closed and return detailed information
+    """
+    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = SaleInvoice.objects.select_related("user", "seller").prefetch_related("items__product").all()
+
+        if user.is_superuser:
+            return queryset
+
+        match user.role:
+            case Role.SALES:
+                queryset = queryset.filter(user__profile__sales=user)
+            case Role.AREA_MANAGER:
+                queryset = queryset.filter(user__profile__area_manager=user)
+            case Role.MANAGER:
+                queryset = queryset.filter(user__profile__manager=user)
+            case _r:
+                queryset = queryset.none()
+
+        return queryset
+    
+    def retrieve(self, request, *args, **kwargs):
+        from inventory.models import InventoryItem
+        from inventory.utils import get_or_create_main_inventory
+        
+        invoice = self.get_object()
+        
+        result = {
+            "invoice_id": invoice.id,
+            "current_status": invoice.status,
+            "can_close": True,
+            "issues": []
+        }
+        
+        # Check items status
+        pending_items = invoice.items.select_related('product').exclude(
+            status=SaleInvoiceItemStatusChoice.RECEIVED
+        )
+        
+        if pending_items.exists():
+            result["can_close"] = False
+            result["issues"].append({
+                "type": "pending_items",
+                "message": "Not all items are in Received status",
+                "details": [
+                    {
+                        "item_id": item.id,
+                        "product_name": item.product.name,
+                        "current_status": item.status,
+                        "required_status": "received"
+                    }
+                    for item in pending_items
+                ]
+            })
+        
+        # Check inventory
+        inventory = get_or_create_main_inventory()
+        inventory_issues = []
+        
+        for item in invoice.items.select_related('product').all():
+            available_quantity = InventoryItem.objects.filter(
+                inventory=inventory,
+                product=item.product
+            ).aggregate(total=models.Sum('remaining_quantity'))['total'] or 0
+            
+            if available_quantity < item.quantity:
+                inventory_issues.append({
+                    "product_id": item.product.id,
+                    "product_name": item.product.name,
+                    "required": item.quantity,
+                    "available": available_quantity,
+                    "shortage": item.quantity - available_quantity
+                })
+        
+        if inventory_issues:
+            result["can_close"] = False
+            result["issues"].append({
+                "type": "insufficient_inventory",
+                "message": "Not enough inventory available",
+                "details": inventory_issues
+            })
+        
+        return Response(result)
 
 
 class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
@@ -722,34 +836,6 @@ class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
                 queryset = queryset.none()
 
         return queryset
-    
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Store the requested status before update
-        requested_status = request.data.get('status')
-        
-        self.perform_update(serializer)
-
-        # Refresh from database to get updated values
-        instance.refresh_from_db()
-        
-        # Add success details
-        response_data = serializer.data
-        
-        if requested_status == 'closed' and instance.status == SaleInvoiceStatusChoice.CLOSED:
-            response_data['success_details'] = {
-                "message": "✅ تم إغلاق الفاتورة بنجاح",
-                "invoice_id": instance.id,
-                "total_price": str(instance.total_price),
-                "items_count": instance.items_count,
-                "total_quantity": instance.total_quantity,
-                "closed_at": instance.created_at.isoformat()
-            }
-
-        return Response(response_data)
 
 
 class SaleInvoiceItemListAPIView(ListAPIView):

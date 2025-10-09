@@ -110,6 +110,11 @@ urlpatterns = [
         name="sale-invoices-download-view",
     ),
     path(
+        "sale-invoices/<int:pk>/check-closeability/",
+        views.SaleInvoiceCheckCloseabilityAPIView.as_view(),
+        name="sale-invoices-check-closeability-view",
+    ),
+    path(
         "sale-invoices/<int:pk>/change-state/",
         views.SaleInvoiceStateUpdateAPIView.as_view(),
         name="sale-invoices-state-update-view",
