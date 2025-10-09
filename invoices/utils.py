@@ -1,6 +1,7 @@
 from copy import deepcopy
 from decimal import Decimal
 from django.apps import apps
+from django.db.models import Sum
 from numpy import insert
 from finance.utils import create_transaction, delete_trasaction, get_transaction, update_transaction
 from inventory.utils import (
@@ -373,18 +374,37 @@ def create_sale_invoice(data):
 
 
 def close_sale_invoice(invoice, update_account=True, update_inventory=True):
-    from django.db.models import Sum
+    # Import here to avoid circular imports
     from inventory.models import InventoryItem
     
-    pending_action_items = invoice.items.exclude(status=SaleInvoiceItemStatusChoice.RECEIVED)
+    pending_action_items = invoice.items.select_related('product').exclude(
+        status=SaleInvoiceItemStatusChoice.RECEIVED
+    )
 
     if pending_action_items.exists():
+        # Convert to list to avoid QuerySet re-evaluation
+        pending_items_list = list(pending_action_items)
+        
         # Build detailed message about pending items
         pending_details = []
-        for item in pending_action_items:
+        pending_items_data = []
+        
+        for item in pending_items_list:
+            try:
+                status_label = item.get_status_display()
+            except:
+                status_label = item.status
+            
             pending_details.append(
-                f"• {item.product.name}: الحالة الحالية ({item.get_status_display()}) - يجب تغييرها إلى (Received)"
+                f"• {item.product.name}: الحالة الحالية ({status_label}) - يجب تغييرها إلى (Received)"
             )
+            pending_items_data.append({
+                "item_id": item.id,
+                "product_name": item.product.name,
+                "current_status": item.status,
+                "current_status_label": status_label,
+                "required_status": "received"
+            })
         
         error_message = (
             "❌ لا يمكن إغلاق الفاتورة - يجب أن تكون جميع العناصر في حالة Received:\n" + 
@@ -393,16 +413,7 @@ def close_sale_invoice(invoice, update_account=True, update_inventory=True):
         
         raise ValidationError({
             "detail": error_message,
-            "pending_items": [
-                {
-                    "item_id": item.id,
-                    "product_name": item.product.name,
-                    "current_status": item.status,
-                    "current_status_label": item.get_status_display(),
-                    "required_status": "received"
-                }
-                for item in pending_action_items
-            ]
+            "pending_items": pending_items_data
         })
 
     # Check inventory availability before closing
@@ -410,7 +421,7 @@ def close_sale_invoice(invoice, update_account=True, update_inventory=True):
         inventory = get_or_create_main_inventory()
         inventory_issues = []
         
-        for item in invoice.items.all():
+        for item in invoice.items.select_related('product').all():
             available_quantity = InventoryItem.objects.filter(
                 inventory=inventory,
                 product=item.product

@@ -727,12 +727,19 @@ class SaleInvoiceStateUpdateAPIView(UpdateAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # Store the requested status before update
+        requested_status = request.data.get('status')
+        
         self.perform_update(serializer)
 
+        # Refresh from database to get updated values
+        instance.refresh_from_db()
+        
         # Add success details
         response_data = serializer.data
         
-        if instance.status == SaleInvoiceStatusChoice.CLOSED:
+        if requested_status == 'closed' and instance.status == SaleInvoiceStatusChoice.CLOSED:
             response_data['success_details'] = {
                 "message": "✅ تم إغلاق الفاتورة بنجاح",
                 "invoice_id": instance.id,
