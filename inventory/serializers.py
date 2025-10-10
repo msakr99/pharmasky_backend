@@ -63,6 +63,11 @@ class InventoryUpdateSerializer(BaseModelSerializer):
 class InventoryItemReadSerializer(BaseModelSerializer):
     inventory = InventoryReadSerializer()
     product = ProductReadSerializer(fields=["id", "name", "public_price"])
+    
+    # معلومات المورد ورقم الفاتورة وتاريخ الشراء
+    supplier_name = serializers.SerializerMethodField()
+    supplier_invoice_number = serializers.SerializerMethodField()
+    purchase_date = serializers.SerializerMethodField()
 
     class Meta:
         model = InventoryItem
@@ -80,7 +85,29 @@ class InventoryItemReadSerializer(BaseModelSerializer):
             "remaining_quantity",
             "purchase_sub_total",
             "selling_sub_total",
+            # الحقول الجديدة
+            "supplier_name",
+            "supplier_invoice_number",
+            "purchase_date",
         ]
+    
+    def get_supplier_name(self, obj):
+        """الحصول على اسم المورد من فاتورة الشراء"""
+        if obj.purchase_invoice_item and obj.purchase_invoice_item.invoice:
+            return obj.purchase_invoice_item.invoice.user.name
+        return None
+    
+    def get_supplier_invoice_number(self, obj):
+        """الحصول على رقم فاتورة المورد"""
+        if obj.purchase_invoice_item and obj.purchase_invoice_item.invoice:
+            return obj.purchase_invoice_item.invoice.supplier_invoice_number
+        return None
+    
+    def get_purchase_date(self, obj):
+        """الحصول على تاريخ الشراء"""
+        if obj.purchase_invoice_item and obj.purchase_invoice_item.invoice:
+            return obj.purchase_invoice_item.invoice.created_at
+        return None
 
 
 class InventoryItemCreateSerializer(BaseModelSerializer):
