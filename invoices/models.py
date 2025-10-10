@@ -39,7 +39,8 @@ class PurchaseInvoice(models.Model):
 
     @property
     def transaction_data(self):
-        from finance.models import Account
+        from django.apps import apps
+        Account = apps.get_model('finance', 'Account')
         account, _ = Account.objects.get_or_create(user=self.user)
         return {
             "account": account,
@@ -153,7 +154,8 @@ class PurchaseReturnInvoice(models.Model):
 
     @property
     def transaction_data(self):
-        from finance.models import Account
+        from django.apps import apps
+        Account = apps.get_model('finance', 'Account')
         account, _ = Account.objects.get_or_create(user=self.user)
         return {
             "account": account,
@@ -221,7 +223,8 @@ class SaleInvoice(models.Model):
 
     @property
     def transaction_data(self):
-        from finance.models import Account
+        from django.apps import apps
+        Account = apps.get_model('finance', 'Account')
         account, _ = Account.objects.get_or_create(user=self.user)
         return {
             "account": account,
@@ -317,7 +320,8 @@ class SaleReturnInvoice(models.Model):
 
     @property
     def transaction_data(self):
-        from finance.models import Account
+        from django.apps import apps
+        Account = apps.get_model('finance', 'Account')
         account, _ = Account.objects.get_or_create(user=self.user)
         return {
             "account": account,

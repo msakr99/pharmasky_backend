@@ -276,7 +276,26 @@ def delete_purchase_invoice_item(item, update_invoice=True):
 
 # PURCHASE RETURN INVOICES
 def create_purchase_return_invoice(data):
+    from decimal import Decimal
+    
     items = data.pop("items", [])
+    
+    # Calculate totals
+    items_count = len(items)
+    total_quantity = 0
+    total_price = Decimal("0.00")
+    
+    for item in items:
+        quantity = item.get("quantity", 0)
+        sub_total = item.get("sub_total", Decimal("0.00"))
+        total_quantity += quantity
+        total_price += sub_total
+    
+    # Add calculated fields to data
+    data["items_count"] = items_count
+    data["total_quantity"] = total_quantity
+    data["total_price"] = total_price
+    
     PurchaseReturnInvoice = get_model("invoices", "PurchaseReturnInvoice")
     invoice = PurchaseReturnInvoice.objects.create(**data)
 

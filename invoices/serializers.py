@@ -661,9 +661,7 @@ class PurchaseReturnInvoiceItemReadSerializer(BaseModelSerializer):
 
 
 class PurchaseReturnInvoiceItemCreateSerializer(BaseModelSerializer):
-    invoice = serializers.PrimaryKeyRelatedField(
-        queryset=PurchaseReturnInvoice.objects.exclude(status=PurchaseReturnInvoiceStatusChoice.CLOSED)
-    )
+    invoice = serializers.CharField()  # Accept both ID and supplier_invoice_number
     purchase_invoice_item = serializers.PrimaryKeyRelatedField(
         queryset=PurchaseInvoiceItem.objects.select_related("invoice", "invoice__user").filter(
             invoice__status=PurchaseInvoiceStatusChoice.CLOSED, remaining_quantity__gt=0
@@ -674,6 +672,42 @@ class PurchaseReturnInvoiceItemCreateSerializer(BaseModelSerializer):
         model = PurchaseReturnInvoiceItem
         fields = ["invoice", "purchase_invoice_item", "quantity"]
         extra_kwargs = {"quantity": {"min_value": 1}}
+
+    def validate_invoice(self, value):
+        """Accept either PurchaseReturnInvoice ID or supplier_invoice_number from related PurchaseInvoice"""
+        # Try as integer (ID)
+        try:
+            invoice_id = int(value)
+            invoice = PurchaseReturnInvoice.objects.exclude(
+                status=PurchaseReturnInvoiceStatusChoice.CLOSED
+            ).filter(id=invoice_id).first()
+            if invoice:
+                return invoice
+        except (ValueError, TypeError):
+            pass
+        
+        # Try as supplier_invoice_number - find PurchaseInvoice first, then create/get PurchaseReturnInvoice
+        purchase_invoice = PurchaseInvoice.objects.filter(
+            supplier_invoice_number=value,
+            status=PurchaseInvoiceStatusChoice.CLOSED
+        ).select_related("user").first()
+        
+        if purchase_invoice:
+            # Find or create return invoice for this purchase invoice's user
+            invoice, created = PurchaseReturnInvoice.objects.get_or_create(
+                user=purchase_invoice.user,
+                status=PurchaseReturnInvoiceStatusChoice.PLACED,
+                defaults={
+                    'items_count': 0,
+                    'total_quantity': 0,
+                    'total_price': Decimal('0.00')
+                }
+            )
+            return invoice
+        
+        raise serializers.ValidationError(
+            f"معرف الفاتورة أو رقم فاتورة المورد \"{value}\" غير صالح - الفاتورة غير موجودة."
+        )
 
     def validate(self, attrs):
         invoice = attrs.get("invoice")
