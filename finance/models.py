@@ -99,8 +99,9 @@ class PurchasePayment(models.Model):
 
     @property
     def transaction_data(self):
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.PURCHASE_PAYMENT,
             "amount": self.amount,
             "content_type": ContentType.objects.get_for_model(self),
@@ -133,8 +134,9 @@ class SalePayment(models.Model):
 
     @property
     def transaction_data(self):
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.SALE_PAYMENT,
             "amount": self.amount,
             "content_type": ContentType.objects.get_for_model(self),

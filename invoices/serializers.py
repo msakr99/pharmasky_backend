@@ -129,6 +129,8 @@ class PurchaseInvoiceReadSerializer(BaseModelSerializer):
     items_url = QueryParameterHyperlinkedIdentityField(
         view_name="invoices:purchase-invoice-items-list-view", query_param="invoice"
     )
+    average_purchase_discount_percentage = serializers.SerializerMethodField()
+    total_public_price = serializers.SerializerMethodField()
 
     class Meta:
         model = PurchaseInvoice
@@ -139,6 +141,8 @@ class PurchaseInvoiceReadSerializer(BaseModelSerializer):
             "items_count",
             "total_quantity",
             "total_price",
+            "total_public_price",
+            "average_purchase_discount_percentage",
             "status",
             "status_label",
             "created_at",
@@ -146,6 +150,43 @@ class PurchaseInvoiceReadSerializer(BaseModelSerializer):
             "deleted_items",
             "items_url",
         ]
+
+    def get_total_public_price(self, instance):
+        """
+        Calculate the total public price (before discount) for all items in the invoice.
+        Formula: Sum(quantity × public_price)
+        """
+        from decimal import Decimal
+        
+        total = Decimal("0.00")
+        for item in instance.items.select_related("product"):
+            quantity_price = item.quantity * item.product.public_price
+            total += quantity_price
+        
+        return total.quantize(Decimal("0.00"))
+
+    def get_average_purchase_discount_percentage(self, instance):
+        """
+        Calculate the weighted average purchase discount percentage for the invoice.
+        Formula: (Sum(quantity × purchase_discount_percentage × public_price) / Sum(quantity × public_price)) × 100
+        """
+        from decimal import Decimal
+        
+        total_public_price = Decimal("0.00")
+        total_discount = Decimal("0.00")
+
+        for item in instance.items.select_related("product"):
+            quantity_price = item.quantity * item.product.public_price
+            quantity_discount = quantity_price * (item.purchase_discount_percentage / 100)
+
+            total_public_price += quantity_price
+            total_discount += quantity_discount
+
+        if total_public_price == 0:
+            return Decimal("0.00")
+
+        average_discount = (total_discount / total_public_price) * 100
+        return Decimal(average_discount).quantize(Decimal("0.00"))
 
 
 class PurchaseInvoiceCreateSerializer(BaseModelSerializer):
@@ -1086,6 +1127,8 @@ class SaleInvoiceStateUpdateSerializer(BaseModelSerializer):
         fields = ["status", "status_label"]
 
     def update(self, instance, validated_data):
+        import traceback
+        
         status = validated_data.get("status")
 
         fn = None
@@ -1099,8 +1142,20 @@ class SaleInvoiceStateUpdateSerializer(BaseModelSerializer):
             raise serializers.ValidationError({"detail": "Status is already set to this value."})
 
         if fn is not None:
-            with transaction.atomic():
-                instance = fn(instance)
+            try:
+                with transaction.atomic():
+                    instance = fn(instance)
+            except serializers.ValidationError:
+                # Re-raise validation errors
+                raise
+            except Exception as e:
+                # Catch any other error and provide details
+                error_msg = f"Error closing invoice: {str(e)}"
+                raise serializers.ValidationError({
+                    "detail": error_msg,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)
+                })
 
         return instance
 

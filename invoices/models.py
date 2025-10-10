@@ -39,8 +39,10 @@ class PurchaseInvoice(models.Model):
 
     @property
     def transaction_data(self):
+        from finance.models import Account
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.PURCHASE_INVOICE,
             "amount": self.total_price,
             "content_type": ContentType.objects.get_for_model(self),
@@ -151,8 +153,10 @@ class PurchaseReturnInvoice(models.Model):
 
     @property
     def transaction_data(self):
+        from finance.models import Account
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.PURCHASE_RETURN,
             "amount": self.total_price,
             "content_type": ContentType.objects.get_for_model(self),
@@ -217,8 +221,10 @@ class SaleInvoice(models.Model):
 
     @property
     def transaction_data(self):
+        from finance.models import Account
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.SALE_INVOICE,
             "amount": self.total_price,
             "content_type": ContentType.objects.get_for_model(self),
@@ -311,8 +317,10 @@ class SaleReturnInvoice(models.Model):
 
     @property
     def transaction_data(self):
+        from finance.models import Account
+        account, _ = Account.objects.get_or_create(user=self.user)
         return {
-            "account": self.user.account,
+            "account": account,
             "type": AccountTransactionTypeChoice.SALE_RETURN,
             "amount": self.total_price,
             "content_type": ContentType.objects.get_for_model(self),
