@@ -5,7 +5,7 @@ from django.apps import apps
 from accounts.permissions import *
 from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS, SafeTransactionTypeChoice
 from finance.filters import AccountTransactionFilter, PurchasePaymentFilter, SalePaymentFilter
-from finance.models import Account, AccountTransaction, PurchasePayment, SafeTransaction, SalePayment
+from finance.models import Account, AccountTransaction, PurchasePayment, SafeTransaction, SalePayment, Expense
 from finance.serializers import (
     AccountTransactionReadSerializer,
     AccountUpdateSerializer,
@@ -17,6 +17,7 @@ from finance.serializers import (
     SalePaymentCreateSerializer,
     SalePaymentReadSerializer,
     SalePaymentUpdateSerializer,
+    ExpenseSerializer,
 )
 from finance.utils import delete_payment
 from rest_framework.response import Response
@@ -315,16 +316,71 @@ class SafeRetrieveAPIView(GenericAPIView):
         inventory_total_amount = get_model("inventory", "InventoryItem").objects.aggregate(
             total_amount=models.Sum("purchase_sub_total")
         )["total_amount"] or Decimal("0.00")
+        
+        # حساب إجمالي المصاريف (تخصم من رأس المال)
+        expenses_total_amount = Expense.objects.aggregate(
+            total_amount=models.Sum("amount")
+        )["total_amount"] or Decimal("0.00")
 
         return {
             "safe_total_amount": safe_total_amount,
             "debt_total_amount": debt_total_amount,
             "credit_total_amount": credit_total_amount,
             "inventory_total_amount": inventory_total_amount,
-            "total_amount": safe_total_amount + credit_total_amount + inventory_total_amount - debt_total_amount,
+            "expenses_total_amount": expenses_total_amount,
+            "total_amount": safe_total_amount + credit_total_amount + inventory_total_amount - debt_total_amount - expenses_total_amount,
         }
 
     def get(self, request, *args, **kwargs):
         data = self.get_queryset()
         serializer = self.get_serializer(data)
         return Response(serializer.data)
+
+
+class ExpenseListAPIView(ListAPIView):
+    permission_classes = [ManagerRoleAuthentication]
+    serializer_class = ExpenseSerializer
+    ordering_fields = ["expense_date", "amount", "category", "type"]
+    search_fields = ["description", "recipient"]
+    
+    def get_queryset(self):
+        queryset = Expense.objects.all()
+        
+        # فلترة حسب النوع
+        expense_type = self.request.query_params.get('type', None)
+        if expense_type:
+            queryset = queryset.filter(type=expense_type)
+        
+        # فلترة حسب الفئة
+        category = self.request.query_params.get('category', None)
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # فلترة حسب الشهر
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+        if month and year:
+            queryset = queryset.filter(
+                expense_date__month=month,
+                expense_date__year=year
+            )
+        
+        return queryset
+
+
+class ExpenseCreateAPIView(CreateAPIView):
+    permission_classes = [ManagerRoleAuthentication]
+    serializer_class = ExpenseSerializer
+    queryset = Expense.objects.all()
+
+
+class ExpenseUpdateAPIView(UpdateAPIView):
+    permission_classes = [ManagerRoleAuthentication]
+    serializer_class = ExpenseSerializer
+    queryset = Expense.objects.all()
+
+
+class ExpenseDestroyAPIView(DestroyAPIView):
+    permission_classes = [ManagerRoleAuthentication]
+    serializer_class = ExpenseSerializer
+    queryset = Expense.objects.all()

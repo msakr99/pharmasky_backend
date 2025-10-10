@@ -1,6 +1,6 @@
 from django.contrib import admin
 from core.admin.abstract_admin import DefaultBaseAdminItems
-from finance.models import Account, AccountTransaction, PurchasePayment, SalePayment
+from finance.models import Account, AccountTransaction, PurchasePayment, SalePayment, Expense
 
 
 @admin.register(Account)
@@ -40,3 +40,19 @@ class SalePaymentModelAdmin(DefaultBaseAdminItems):
     autocomplete_fields = ["user"]
     list_select_related = ["user"]
     date_hierarchy = "at"
+
+
+@admin.register(Expense)
+class ExpenseModelAdmin(DefaultBaseAdminItems):
+    list_display = ["category", "type", "amount", "recipient", "expense_date", "payment_method"]
+    search_fields = ["description", "recipient"]
+    list_filter = ["type", "category", "payment_method", "expense_date"]
+    date_hierarchy = "expense_date"
+    fieldsets = (
+        ("معلومات أساسية", {
+            "fields": ("type", "category", "amount", "payment_method")
+        }),
+        ("التفاصيل", {
+            "fields": ("description", "recipient", "expense_date")
+        }),
+    )

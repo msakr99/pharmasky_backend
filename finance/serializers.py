@@ -9,12 +9,14 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.apps import apps
 from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, AccountTransactionTypeChoice
+from finance.expense_choices import ExpenseTypeChoice, ExpenseCategoryChoice
 from finance.models import (
     Account,
     AccountTransaction,
     PurchasePayment,
     SafeTransaction,
     SalePayment,
+    Expense,
 )
 from finance.utils import create_puchase_payment, create_sale_payment, update_account, update_payment
 from invoices.choices import PurchaseInvoiceStatusChoice, SaleInvoiceStatusChoice
@@ -186,9 +188,33 @@ class SafeTransactionSerializer(BaseModelSerializer):
         fields = ["id", "type", "type_label", "amount", "timestamp"]
 
 
+class ExpenseSerializer(BaseModelSerializer):
+    type_label = serializers.CharField(source="get_type_display", read_only=True)
+    category_label = serializers.CharField(source="get_category_display", read_only=True)
+    payment_method_label = serializers.CharField(source="get_payment_method_display", read_only=True)
+
+    class Meta:
+        model = Expense
+        fields = [
+            "id",
+            "type",
+            "type_label",
+            "category",
+            "category_label",
+            "amount",
+            "description",
+            "recipient",
+            "payment_method",
+            "payment_method_label",
+            "expense_date",
+            "created_at",
+        ]
+
+
 class SafeSerializer(BaseSerializer):
     safe_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     credit_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     debt_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     inventory_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    expenses_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)

@@ -69,4 +69,24 @@ urlpatterns = [
         views.SafeRetrieveAPIView.as_view(),
         name="safe-object-view",
     ),
+    path(
+        "expenses/",
+        views.ExpenseListAPIView.as_view(),
+        name="expenses-list-view",
+    ),
+    path(
+        "expenses/create/",
+        views.ExpenseCreateAPIView.as_view(),
+        name="expenses-create-view",
+    ),
+    path(
+        "expenses/<int:pk>/change/",
+        views.ExpenseUpdateAPIView.as_view(),
+        name="expenses-update-view",
+    ),
+    path(
+        "expenses/<int:pk>/destroy/",
+        views.ExpenseDestroyAPIView.as_view(),
+        name="expenses-delete-view",
+    ),
 ]
