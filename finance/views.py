@@ -2,6 +2,7 @@ from decimal import Decimal
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView, GenericAPIView
 from django.db import models
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from accounts.permissions import *
 from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS, SafeTransactionTypeChoice
 from finance.filters import AccountTransactionFilter, PurchasePaymentFilter, SalePaymentFilter
