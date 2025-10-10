@@ -1,0 +1,23 @@
+# الأوامر المطلوبة على السيرفر - نفذها في الترمينال المفتوح
+# أنت الآن في: root@pharmasky-server:/opt/pharmasky#
+
+# 1. سحب التحديثات
+git pull origin main
+
+# 2. دخول الـ container
+docker compose exec web bash
+
+# 3. داخل الـ container - تشغيل Migration
+python manage.py migrate
+
+# 4. الخروج من الـ container
+exit
+
+# 5. إعادة تشغيل Docker
+docker compose restart web
+
+# 6. التحقق من الحالة
+docker compose ps
+
+# تم! ✅
+

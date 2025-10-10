@@ -18,9 +18,12 @@ from finance.serializers import (
     SalePaymentReadSerializer,
     SalePaymentUpdateSerializer,
     ExpenseSerializer,
+    CollectionScheduleSerializer,
 )
 from finance.utils import delete_payment
 from rest_framework.response import Response
+from django.utils import timezone
+from datetime import timedelta
 
 get_model = apps.get_model
 
@@ -384,3 +387,134 @@ class ExpenseDestroyAPIView(DestroyAPIView):
     permission_classes = [ManagerRoleAuthentication]
     serializer_class = ExpenseSerializer
     queryset = Expense.objects.all()
+
+
+class CollectionScheduleAPIView(GenericAPIView):
+    """
+    قائمة مواعيد التحصيلات المتوقعة
+    Collection Schedule - Expected payment dates based on payment periods
+    
+    Returns list of pharmacies with:
+    - Customer name (اسم العميل)
+    - Expected collection date (تاريخ التحصيل المتوقع)
+    - Outstanding amount (المبلغ المستحق)
+    - Total balance (إجمالي الرصيد)
+    """
+    permission_classes = [StaffRoleAuthentication]
+    serializer_class = CollectionScheduleSerializer
+    
+    def get(self, request, *args, **kwargs):
+        User = get_user_model()
+        current_date = timezone.now()
+        
+        # Get all pharmacies with payment periods and negative balance (مديونين)
+        pharmacies = (
+            User.objects
+            .filter(role=Role.PHARMACY)
+            .select_related('profile', 'profile__payment_period', 'account')
+            .exclude(account__balance__gte=0)  # Only those with debt (balance < 0)
+        )
+        
+        # Filter based on user role
+        user = request.user
+        if not user.is_superuser:
+            match user.role:
+                case Role.SALES:
+                    pharmacies = pharmacies.filter(profile__sales=user)
+                case Role.MANAGER:
+                    pharmacies = pharmacies.filter(profile__manager=user)
+                case Role.AREA_MANAGER:
+                    pharmacies = pharmacies.filter(profile__area_manager=user)
+                case _:
+                    pharmacies = pharmacies.none()
+        
+        # Build collection schedule data
+        schedule_data = []
+        total_outstanding = Decimal('0.00')
+        
+        for pharmacy in pharmacies:
+            # Skip if no profile or account
+            if not hasattr(pharmacy, 'profile') or not hasattr(pharmacy, 'account'):
+                continue
+            
+            profile = pharmacy.profile
+            account = pharmacy.account
+            outstanding_balance = abs(account.balance)  # Convert negative to positive
+            
+            # Skip if no outstanding balance
+            if outstanding_balance <= 0:
+                continue
+            
+            # Calculate expected collection date
+            expected_date = None
+            days_until = None
+            is_overdue = False
+            payment_period_name = None
+            period_days = None
+            
+            if profile.payment_period and profile.latest_invoice_date:
+                payment_period_name = profile.payment_period.name
+                period_days = profile.payment_period.period_in_days
+                expected_date = profile.latest_invoice_date + timedelta(days=period_days)
+                days_until = (expected_date - current_date).days
+                is_overdue = days_until < 0
+            
+            # Calculate penalty and cashback
+            penalty_percentage = profile.late_payment_penalty_percentage or Decimal('0.20')
+            cashback_percentage = profile.early_payment_cashback_percentage or Decimal('0.10')
+            penalty_amount = Decimal('0.00')
+            cashback_amount = Decimal('0.00')
+            total_with_penalty = outstanding_balance
+            total_with_cashback = outstanding_balance
+            
+            if days_until is not None:
+                if days_until < 0:
+                    # Late payment - calculate penalty
+                    late_days = abs(days_until)
+                    penalty_amount = (outstanding_balance * penalty_percentage * late_days) / 100
+                    total_with_penalty = outstanding_balance + penalty_amount
+                elif days_until > 0:
+                    # Early payment - calculate cashback
+                    early_days = days_until
+                    cashback_amount = (outstanding_balance * cashback_percentage * early_days) / 100
+                    total_with_cashback = outstanding_balance - cashback_amount
+            
+            schedule_data.append({
+                'user_id': pharmacy.id,
+                'customer_name': pharmacy.name,
+                'username': str(pharmacy.username),
+                'payment_period_name': payment_period_name or 'غير محدد',
+                'period_in_days': period_days or 0,
+                'latest_invoice_date': profile.latest_invoice_date,
+                'expected_collection_date': expected_date,
+                'days_until_collection': days_until or 0,
+                'outstanding_balance': outstanding_balance,
+                'is_overdue': is_overdue,
+                # Penalty
+                'penalty_percentage': penalty_percentage,
+                'penalty_amount': penalty_amount,
+                'total_with_penalty': total_with_penalty,
+                # Cashback
+                'cashback_percentage': cashback_percentage,
+                'cashback_amount': cashback_amount,
+                'total_with_cashback': total_with_cashback,
+            })
+            
+            total_outstanding += outstanding_balance
+        
+        # Sort by expected collection date (overdue first, then by date)
+        schedule_data.sort(
+            key=lambda x: (
+                not x['is_overdue'],  # Overdue first (False comes before True)
+                x['expected_collection_date'] if x['expected_collection_date'] else current_date
+            )
+        )
+        
+        # Serialize data
+        serializer = self.get_serializer(schedule_data, many=True)
+        
+        return Response({
+            'count': len(schedule_data),
+            'total_outstanding_amount': total_outstanding,
+            'results': serializer.data
+        })

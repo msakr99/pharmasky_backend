@@ -89,4 +89,9 @@ urlpatterns = [
         views.ExpenseDestroyAPIView.as_view(),
         name="expenses-delete-view",
     ),
+    path(
+        "collection-schedule/",
+        views.CollectionScheduleAPIView.as_view(),
+        name="collection-schedule-view",
+    ),
 ]

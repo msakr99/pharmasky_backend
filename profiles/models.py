@@ -109,6 +109,20 @@ class UserProfile(models.Model):
     company = models.BooleanField(default=False)
     key_person = models.CharField(max_length=255, blank=True, default="")
     key_person_phone = models.CharField(max_length=255, blank=True, default="")
+    
+    # Late payment penalty and early payment cashback
+    late_payment_penalty_percentage = models.DecimalField(
+        max_digits=4, 
+        decimal_places=2, 
+        default=Decimal("0.20"),
+        help_text="Daily penalty percentage for late payments (default 0.20%)"
+    )
+    early_payment_cashback_percentage = models.DecimalField(
+        max_digits=4, 
+        decimal_places=2, 
+        default=Decimal("0.10"),
+        help_text="Daily cashback percentage for early payments (default 0.10%)"
+    )
 
     def __str__(self):
         return f"{self.user}'s Profile"

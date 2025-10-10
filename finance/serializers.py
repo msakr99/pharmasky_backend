@@ -21,6 +21,7 @@ from finance.models import (
 from finance.utils import create_puchase_payment, create_sale_payment, update_account, update_payment
 from invoices.choices import PurchaseInvoiceStatusChoice, SaleInvoiceStatusChoice
 from django.utils import timezone
+from datetime import timedelta
 
 get_model = apps.get_model
 
@@ -218,3 +219,29 @@ class SafeSerializer(BaseSerializer):
     inventory_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     expenses_total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     total_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+
+
+class CollectionScheduleSerializer(BaseSerializer):
+    """
+    Serializer for collection schedule showing expected payment dates
+    based on payment period (شريحة) for each pharmacy.
+    """
+    user_id = serializers.IntegerField(read_only=True)
+    customer_name = serializers.CharField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    payment_period_name = serializers.CharField(read_only=True)
+    period_in_days = serializers.IntegerField(read_only=True)
+    latest_invoice_date = serializers.DateTimeField(read_only=True)
+    expected_collection_date = serializers.DateTimeField(read_only=True)
+    days_until_collection = serializers.IntegerField(read_only=True)
+    outstanding_balance = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    
+    # Penalty and Cashback
+    penalty_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    penalty_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_with_penalty = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    
+    cashback_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    cashback_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_with_cashback = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
