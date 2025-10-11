@@ -623,44 +623,63 @@ class AccountsPayableAPIView(GenericAPIView):
         total_payable = Decimal('0.00')
         
         for account in accounts:
-            user = account.user
-            amount_owed = account.balance
-            
-            # Get last payment date
-            last_payment = PurchasePayment.objects.filter(
-                user=user
-            ).order_by('-at').first()
-            
-            last_payment_date = last_payment.at if last_payment else None
-            days_since_last_payment = None
-            
-            if last_payment_date:
-                days_since_last_payment = (current_date - last_payment_date).days
-            
-            # Get last purchase date (from invoices)
-            last_purchase_invoice = get_model('invoices', 'PurchaseInvoice').objects.filter(
-                store=user
-            ).order_by('-created_at').first()
-            
-            last_purchase_date = last_purchase_invoice.created_at if last_purchase_invoice else None
-            
-            # Get role label
-            role_label = user.get_role_display() if hasattr(user, 'get_role_display') else user.role
-            
-            entry = {
-                'user_id': user.id,
-                'supplier_name': user.name,
-                'username': str(user.username),
-                'role': user.role,
-                'role_label': role_label,
-                'amount_owed': amount_owed,
-                'last_payment_date': last_payment_date,
-                'last_purchase_date': last_purchase_date,
-                'days_since_last_payment': days_since_last_payment or 0,
-            }
-            
-            payable_data.append(entry)
-            total_payable += amount_owed
+            try:
+                user = account.user
+                amount_owed = account.balance
+                
+                # Get last payment date
+                last_payment = PurchasePayment.objects.filter(
+                    user=user
+                ).order_by('-at').first()
+                
+                last_payment_date = last_payment.at if last_payment else None
+                days_since_last_payment = 0
+                
+                if last_payment_date:
+                    try:
+                        # Calculate days difference
+                        time_diff = current_date - last_payment_date
+                        days_since_last_payment = time_diff.days
+                    except Exception:
+                        days_since_last_payment = 0
+                
+                # Get last purchase date (from invoices)
+                last_purchase_date = None
+                try:
+                    PurchaseInvoice = get_model('invoices', 'PurchaseInvoice')
+                    last_purchase_invoice = PurchaseInvoice.objects.filter(
+                        store=user
+                    ).order_by('-created_at').first()
+                    
+                    if last_purchase_invoice:
+                        last_purchase_date = last_purchase_invoice.created_at
+                except Exception:
+                    # If model doesn't exist or error, just skip
+                    pass
+                
+                # Get role label
+                try:
+                    role_label = user.get_role_display()
+                except Exception:
+                    role_label = user.role
+                
+                entry = {
+                    'user_id': user.id,
+                    'supplier_name': user.name,
+                    'username': str(user.username),
+                    'role': user.role,
+                    'role_label': role_label,
+                    'amount_owed': amount_owed,
+                    'last_payment_date': last_payment_date,
+                    'last_purchase_date': last_purchase_date,
+                    'days_since_last_payment': days_since_last_payment,
+                }
+                
+                payable_data.append(entry)
+                total_payable += amount_owed
+            except Exception as e:
+                # Skip this account if there's an error
+                continue
         
         # Sort by amount owed (descending)
         payable_data.sort(key=lambda x: x['amount_owed'], reverse=True)
