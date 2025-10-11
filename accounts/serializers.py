@@ -53,10 +53,11 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 class UserReadSerializer(BaseModelSerializer):
     username = ExtendedPhoneNumberField()
     role_label = serializers.CharField(source="get_role_display", read_only=True)
+    account = AccountReadSerializer()
 
     class Meta:
         model = User
-        fields = ["id", "username", "name", "e_name", "area", "role", "role_label", "is_superuser"]
+        fields = ["id", "username", "name", "e_name", "area", "role", "role_label", "is_superuser", "account"]
 
 
 class UserWithProfileReadSerializer(BaseModelSerializer):
@@ -75,6 +76,7 @@ class UserWithProfileReadSerializer(BaseModelSerializer):
     username = ExtendedPhoneNumberField()
     role_label = serializers.CharField(source="get_role_display", read_only=True)
     profile = UserProfileSubReadSerializer()
+    account = AccountReadSerializer()
 
     class Meta:
         model = User
@@ -88,6 +90,7 @@ class UserWithProfileReadSerializer(BaseModelSerializer):
             "role_label",
             "is_superuser",
             "profile",
+            "account",
         ]
 
 
