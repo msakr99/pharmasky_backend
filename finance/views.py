@@ -910,6 +910,7 @@ class UserFinancialSummaryAPIView(GenericAPIView):
     User Financial Summary - Purchase, Sales, Returns, Payments, and Transaction Volume
     
     Query Parameters:
+    - user_id: معرف المستخدم (لعرض إحصائيات مستخدم واحد فقط)
     - search: البحث باسم المستخدم أو رقم الهاتف
     - role: فلتر حسب نوع المستخدم (PHARMACY, STORE, etc.)
     - min_volume: الحد الأدنى لحجم التعامل
@@ -933,6 +934,7 @@ class UserFinancialSummaryAPIView(GenericAPIView):
         User = get_user_model()
         
         # Get query parameters
+        user_id = request.query_params.get('user_id', None)
         search_term = request.query_params.get('search', '').strip()
         role_filter = request.query_params.get('role', '').strip().upper()
         min_volume = request.query_params.get('min_volume', None)
@@ -941,6 +943,10 @@ class UserFinancialSummaryAPIView(GenericAPIView):
         
         # Get all users with accounts
         users = User.objects.select_related('account').exclude(is_superuser=True)
+        
+        # Apply user_id filter (for single user)
+        if user_id:
+            users = users.filter(id=user_id)
         
         # Apply search filter
         if search_term:

@@ -15,14 +15,22 @@ GET /finance/user-financial-summary/
 
 ## 📋 المعاملات الاختيارية (Query Parameters)
 
-### 1. search (اختياري)
+### 1. user_id (اختياري)
+لعرض إحصائيات مستخدم واحد فقط
+
+```bash
+# عرض إحصائيات المستخدم رقم 5
+GET /finance/user-financial-summary/?user_id=5
+```
+
+### 2. search (اختياري)
 البحث باسم المستخدم أو رقم الهاتف
 
 ```bash
 GET /finance/user-financial-summary/?search=محمد
 ```
 
-### 2. role (اختياري)
+### 3. role (اختياري)
 فلترة حسب نوع المستخدم
 
 ```bash
@@ -33,14 +41,14 @@ GET /finance/user-financial-summary/?role=PHARMACY
 GET /finance/user-financial-summary/?role=STORE
 ```
 
-### 3. min_volume (اختياري)
+### 4. min_volume (اختياري)
 الحد الأدنى لحجم التعامل
 
 ```bash
 GET /finance/user-financial-summary/?min_volume=100000
 ```
 
-### 4. date_from & date_to (اختياري)
+### 5. date_from & date_to (اختياري)
 فلترة حسب التاريخ
 
 ```bash
@@ -129,7 +137,17 @@ GET /finance/user-financial-summary/?date_from=2025-01-01&date_to=2025-12-31
 
 ## 📱 أمثلة الاستخدام
 
-### مثال 1: عرض كل المستخدمين
+### مثال 1: عرض إحصائيات مستخدم واحد
+
+```bash
+GET http://129.212.140.152/finance/user-financial-summary/?user_id=5
+```
+
+**النتيجة**: ملخص مالي للمستخدم رقم 5 فقط
+
+---
+
+### مثال 2: عرض كل المستخدمين
 
 ```bash
 GET http://129.212.140.152/finance/user-financial-summary/
@@ -139,7 +157,7 @@ GET http://129.212.140.152/finance/user-financial-summary/
 
 ---
 
-### مثال 2: البحث عن صيدلية معينة
+### مثال 3: البحث عن صيدلية معينة
 
 ```bash
 GET http://129.212.140.152/finance/user-financial-summary/?search=النور
@@ -149,7 +167,7 @@ GET http://129.212.140.152/finance/user-financial-summary/?search=النور
 
 ---
 
-### مثال 3: عرض الصيدليات فقط
+### مثال 4: عرض الصيدليات فقط
 
 ```bash
 GET http://129.212.140.152/finance/user-financial-summary/?role=PHARMACY
@@ -159,7 +177,7 @@ GET http://129.212.140.152/finance/user-financial-summary/?role=PHARMACY
 
 ---
 
-### مثال 4: عرض المستخدمين بحجم تعامل أكثر من 100,000
+### مثال 5: عرض المستخدمين بحجم تعامل أكثر من 100,000
 
 ```bash
 GET http://129.212.140.152/finance/user-financial-summary/?min_volume=100000
@@ -169,7 +187,7 @@ GET http://129.212.140.152/finance/user-financial-summary/?min_volume=100000
 
 ---
 
-### مثال 5: ملخص شهر معين
+### مثال 6: ملخص شهر معين
 
 ```bash
 GET http://129.212.140.152/finance/user-financial-summary/?date_from=2025-10-01&date_to=2025-10-31
@@ -377,7 +395,27 @@ export default FinancialSummaryList;
 
 ## 🎯 حالات الاستخدام
 
-### 1. عرض أفضل 10 عملاء
+### 1. عرض إحصائيات عميل محدد
+
+```bash
+GET /finance/user-financial-summary/?user_id=5
+```
+
+**يعرض**: ملخص مالي كامل للمستخدم رقم 5
+
+---
+
+### 2. عرض إحصائيات عميل في فترة محددة
+
+```bash
+GET /finance/user-financial-summary/?user_id=5&date_from=2025-10-01&date_to=2025-10-31
+```
+
+**يعرض**: ملخص مالي للمستخدم رقم 5 خلال شهر أكتوبر فقط
+
+---
+
+### 3. عرض أفضل 10 عملاء
 
 ```bash
 GET /finance/user-financial-summary/?min_volume=500000
@@ -387,7 +425,7 @@ GET /finance/user-financial-summary/?min_volume=500000
 
 ---
 
-### 2. تقرير شهري للصيدليات
+### 4. تقرير شهري للصيدليات
 
 ```bash
 GET /finance/user-financial-summary/?role=PHARMACY&date_from=2025-10-01&date_to=2025-10-31
@@ -397,7 +435,7 @@ GET /finance/user-financial-summary/?role=PHARMACY&date_from=2025-10-01&date_to=
 
 ---
 
-### 3. البحث عن عميل معين
+### 5. البحث عن عميل معين
 
 ```bash
 GET /finance/user-financial-summary/?search=النور
