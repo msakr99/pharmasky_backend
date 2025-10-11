@@ -27,6 +27,7 @@ from finance.serializers import (
     CollectionScheduleSerializer,
     AccountsPayableSerializer,
     AccountStatementPDFSerializer,
+    UserFinancialSummarySerializer,
 )
 from finance.utils import delete_payment
 from rest_framework.response import Response
@@ -901,3 +902,206 @@ class AccountStatementPDFAPIView(PDFFileMixin, GenericAPIView):
         # Serialize
         serializer = self.get_serializer(statement_data, many=True)
         return Response(serializer.data)
+
+
+class UserFinancialSummaryAPIView(GenericAPIView):
+    """
+    ملخص مالي لكل مستخدم (صيدلية أو متجر)
+    User Financial Summary - Purchase, Sales, Returns, Payments, and Transaction Volume
+    
+    Query Parameters:
+    - search: البحث باسم المستخدم أو رقم الهاتف
+    - role: فلتر حسب نوع المستخدم (PHARMACY, STORE, etc.)
+    - min_volume: الحد الأدنى لحجم التعامل
+    - date_from: من تاريخ (YYYY-MM-DD)
+    - date_to: إلى تاريخ (YYYY-MM-DD)
+    
+    Returns list of users with financial summaries including:
+    - Total purchases (إجمالي المشتريات)
+    - Total sales (إجمالي المبيعات)
+    - Total purchase returns (إجمالي مرتجعات المشتريات)
+    - Total sale returns (إجمالي مرتجعات المبيعات)
+    - Total cash paid (إجمالي دفع النقدية)
+    - Total cash received (إجمالي استلام نقدية)
+    - Transaction volume (حجم التعامل)
+    - Current balance (الرصيد الحالي)
+    """
+    permission_classes = [StaffRoleAuthentication]
+    serializer_class = UserFinancialSummarySerializer
+    
+    def get(self, request, *args, **kwargs):
+        User = get_user_model()
+        
+        # Get query parameters
+        search_term = request.query_params.get('search', '').strip()
+        role_filter = request.query_params.get('role', '').strip().upper()
+        min_volume = request.query_params.get('min_volume', None)
+        date_from = request.query_params.get('date_from', None)
+        date_to = request.query_params.get('date_to', None)
+        
+        # Get all users with accounts
+        users = User.objects.select_related('account').exclude(is_superuser=True)
+        
+        # Apply search filter
+        if search_term:
+            users = users.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(e_name__icontains=search_term) |
+                models.Q(username__icontains=search_term)
+            )
+        
+        # Apply role filter
+        if role_filter:
+            users = users.filter(role=role_filter)
+        
+        # Filter based on user role permissions
+        user = request.user
+        if not user.is_superuser:
+            match user.role:
+                case Role.SALES:
+                    users = users.filter(profile__sales=user)
+                case Role.MANAGER:
+                    users = users.filter(profile__manager=user)
+                case Role.AREA_MANAGER:
+                    users = users.filter(profile__area_manager=user)
+                case Role.DATA_ENTRY:
+                    users = users.filter(profile__data_entry=user)
+                case _:
+                    users = users.none()
+        
+        # Build financial summary data
+        summary_data = []
+        
+        # Import invoice models
+        PurchaseInvoice = get_model('invoices', 'PurchaseInvoice')
+        SaleInvoice = get_model('invoices', 'SaleInvoice')
+        PurchaseReturnInvoice = get_model('invoices', 'PurchaseReturnInvoice')
+        SaleReturnInvoice = get_model('invoices', 'SaleReturnInvoice')
+        
+        for user_obj in users:
+            # Skip if no account
+            if not hasattr(user_obj, 'account'):
+                continue
+            
+            account = user_obj.account
+            
+            # Base querysets with date filtering
+            purchase_invoices = PurchaseInvoice.objects.filter(store=user_obj)
+            sale_invoices = SaleInvoice.objects.filter(pharmacy=user_obj)
+            purchase_returns = PurchaseReturnInvoice.objects.filter(store=user_obj)
+            sale_returns = SaleReturnInvoice.objects.filter(pharmacy=user_obj)
+            purchase_payments = PurchasePayment.objects.filter(user=user_obj)
+            sale_payments = SalePayment.objects.filter(user=user_obj)
+            
+            # Apply date filters
+            if date_from:
+                try:
+                    date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                    purchase_invoices = purchase_invoices.filter(created_at__date__gte=date_from_obj)
+                    sale_invoices = sale_invoices.filter(created_at__date__gte=date_from_obj)
+                    purchase_returns = purchase_returns.filter(created_at__date__gte=date_from_obj)
+                    sale_returns = sale_returns.filter(created_at__date__gte=date_from_obj)
+                    purchase_payments = purchase_payments.filter(at__date__gte=date_from_obj)
+                    sale_payments = sale_payments.filter(at__date__gte=date_from_obj)
+                except ValueError:
+                    pass
+            
+            if date_to:
+                try:
+                    date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                    purchase_invoices = purchase_invoices.filter(created_at__date__lte=date_to_obj)
+                    sale_invoices = sale_invoices.filter(created_at__date__lte=date_to_obj)
+                    purchase_returns = purchase_returns.filter(created_at__date__lte=date_to_obj)
+                    sale_returns = sale_returns.filter(created_at__date__lte=date_to_obj)
+                    purchase_payments = purchase_payments.filter(at__date__lte=date_to_obj)
+                    sale_payments = sale_payments.filter(at__date__lte=date_to_obj)
+                except ValueError:
+                    pass
+            
+            # Calculate totals
+            total_purchases = purchase_invoices.aggregate(
+                total=models.Sum('total_price')
+            )['total'] or Decimal('0.00')
+            
+            total_sales = sale_invoices.aggregate(
+                total=models.Sum('total_price')
+            )['total'] or Decimal('0.00')
+            
+            total_purchase_returns = purchase_returns.aggregate(
+                total=models.Sum('total_price')
+            )['total'] or Decimal('0.00')
+            
+            total_sale_returns = sale_returns.aggregate(
+                total=models.Sum('total_price')
+            )['total'] or Decimal('0.00')
+            
+            total_cash_paid = purchase_payments.aggregate(
+                total=models.Sum('amount')
+            )['total'] or Decimal('0.00')
+            
+            total_cash_received = sale_payments.aggregate(
+                total=models.Sum('amount')
+            )['total'] or Decimal('0.00')
+            
+            # Calculate transaction volume
+            # حجم التعامل = المشتريات + المبيعات - المرتجعات
+            transaction_volume = (
+                total_purchases + total_sales - 
+                total_purchase_returns - total_sale_returns
+            )
+            
+            # Apply minimum volume filter
+            if min_volume:
+                try:
+                    min_volume_decimal = Decimal(min_volume)
+                    if transaction_volume < min_volume_decimal:
+                        continue
+                except (ValueError, TypeError):
+                    pass
+            
+            # Get role label
+            try:
+                role_label = user_obj.get_role_display()
+            except Exception:
+                role_label = user_obj.role
+            
+            entry = {
+                'user_id': user_obj.id,
+                'user_name': user_obj.name,
+                'username': str(user_obj.username),
+                'role': user_obj.role,
+                'role_label': role_label,
+                'total_purchases': total_purchases,
+                'total_sales': total_sales,
+                'total_purchase_returns': total_purchase_returns,
+                'total_sale_returns': total_sale_returns,
+                'total_cash_paid': total_cash_paid,
+                'total_cash_received': total_cash_received,
+                'transaction_volume': transaction_volume,
+                'current_balance': account.balance,
+            }
+            
+            summary_data.append(entry)
+        
+        # Sort by transaction volume (descending)
+        summary_data.sort(key=lambda x: x['transaction_volume'], reverse=True)
+        
+        # Calculate grand totals
+        grand_totals = {
+            'total_purchases': sum(x['total_purchases'] for x in summary_data),
+            'total_sales': sum(x['total_sales'] for x in summary_data),
+            'total_purchase_returns': sum(x['total_purchase_returns'] for x in summary_data),
+            'total_sale_returns': sum(x['total_sale_returns'] for x in summary_data),
+            'total_cash_paid': sum(x['total_cash_paid'] for x in summary_data),
+            'total_cash_received': sum(x['total_cash_received'] for x in summary_data),
+            'total_transaction_volume': sum(x['transaction_volume'] for x in summary_data),
+        }
+        
+        # Serialize data
+        serializer = self.get_serializer(summary_data, many=True)
+        
+        return Response({
+            'count': len(summary_data),
+            'grand_totals': grand_totals,
+            'results': serializer.data
+        })

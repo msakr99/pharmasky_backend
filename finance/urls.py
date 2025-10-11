@@ -104,4 +104,9 @@ urlpatterns = [
         views.AccountStatementPDFAPIView.as_view(),
         name="account-statement-pdf-view",
     ),
+    path(
+        "user-financial-summary/",
+        views.UserFinancialSummaryAPIView.as_view(),
+        name="user-financial-summary-view",
+    ),
 ]

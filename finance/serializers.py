@@ -273,3 +273,32 @@ class AccountStatementPDFSerializer(BaseSerializer):
     amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     balance_after = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     remarks = serializers.CharField(read_only=True, required=False, allow_blank=True)
+
+
+class UserFinancialSummarySerializer(BaseSerializer):
+    """
+    Serializer for user financial summary statistics
+    """
+    user_id = serializers.IntegerField(read_only=True)
+    user_name = serializers.CharField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    role = serializers.CharField(read_only=True)
+    role_label = serializers.CharField(read_only=True)
+    
+    # Purchase & Sale Totals
+    total_purchases = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_sales = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    
+    # Returns
+    total_purchase_returns = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_sale_returns = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    
+    # Payments
+    total_cash_paid = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_cash_received = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    
+    # Transaction Volume
+    transaction_volume = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    
+    # Current Balance
+    current_balance = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
