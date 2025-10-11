@@ -21,6 +21,8 @@ from rest_framework.generics import (
     RetrieveAPIView,
     GenericAPIView,
 )
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 from core.views.abstract_paginations import CustomPageNumberPagination
 from rest_framework.authtoken.views import ObtainAuthToken
 from accounts.models import User
@@ -123,6 +125,7 @@ class SimpleUserListAPIView(ListAPIView):
     permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
     serializer_class = UserReadSerializer
     pagination_class = CustomPageNumberPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ("name", "e_name", "username")
     ordering = ("name",)
     filterset_class = SimpleUserFilter
