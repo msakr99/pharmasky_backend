@@ -190,8 +190,102 @@ def calculate_max_offer_from_offer(offer, affect_carts=True):
 
 
 def delete_offer(offer, reset_max=True):
-    if reset_max and offer.is_max:
+    if reset_max:
+        is_wholesale = offer.is_wholesale
+        product = offer.product
         offer.delete()
-        calculate_max_offer_from_offer(offer)
+        
+        if is_wholesale:
+            calculate_max_wholesale_offer(product)
+        else:
+            calculate_max_offer(product)
     else:
         offer.delete()
+
+
+# دوال خاصة بعروض الجملة
+def calculate_max_wholesale_offer(product, affect_carts=False):
+    """
+    حساب أفضل عرض جملة للمنتج بناءً على أعلى خصم
+    عروض الجملة منفصلة تماماً عن العروض العادية
+    """
+    Offer = get_model("offers", "Offer")
+
+    filter_kwargs = {"is_wholesale": True}
+
+    if isinstance(product, str) or isinstance(product, int):
+        filter_kwargs["product_id"] = product
+    elif isinstance(product, models.Model):
+        filter_kwargs["product"] = product
+
+    # الحصول على جميع عروض الجملة للمنتج
+    queryset = Offer.objects.filter(**filter_kwargs)
+    queryset.update(is_max_wholesale=False)
+
+    # حساب أعلى خصم في عروض الجملة
+    max_selling_discount = queryset.filter(remaining_amount__gt=0).aggregate(
+        max_selling_discount=models.Max("selling_discount_percentage"),
+    )["max_selling_discount"]
+
+    if max_selling_discount is not None:
+        queryset.filter(
+            selling_discount_percentage=max_selling_discount,
+            remaining_amount__gt=0
+        ).update(is_max_wholesale=True)
+
+    # ملاحظة: عروض الجملة لا تؤثر على السلات العادية
+    # لأن لها نظام طلب منفصل
+
+
+def calculate_max_wholesale_offer_from_offer(offer, affect_carts=False):
+    """
+    حساب أفضل عرض جملة بناءً على عرض محدد
+    """
+    if not offer.is_wholesale:
+        return
+    
+    product = offer.product
+    calculate_max_wholesale_offer(product, affect_carts=affect_carts)
+
+
+def update_wholesale_offer(offer, data, affect_carts=False):
+    """
+    تحديث عرض جملة
+    مشابه لـ update_offer لكن خاص بالجملة
+    """
+    data.pop("product_code", None)
+    data.pop("product", None)
+    data.pop("user", None)
+    data.pop("purchase_price", None)
+    data.pop("selling_price", None)
+
+    calculate_max = False
+    purchase_discount_percentage = data.get("purchase_discount_percentage", None)
+    selling_discount_percentage = data.get("purchase_discount_percentage", None)
+
+    public_price = offer.product.public_price
+
+    if purchase_discount_percentage is not None and offer.purchase_discount_percentage != purchase_discount_percentage:
+        calculate_max = True
+        selling_discount_percentage, selling_price = get_selling_data(
+            offer.product, offer.user, purchase_discount_percentage
+        )
+        purchase_price = public_price * (1 - purchase_discount_percentage / 100)
+        data["purchase_price"] = Decimal(purchase_price).quantize(Decimal("0.01"))
+        data["selling_discount_percentage"] = Decimal(selling_discount_percentage).quantize(Decimal("0.01"))
+        data["selling_price"] = Decimal(selling_price).quantize(Decimal("0.01"))
+
+    elif selling_discount_percentage is not None and offer.selling_discount_percentage != selling_discount_percentage:
+        calculate_max = True
+        selling_price = public_price * (1 - selling_discount_percentage / 100)
+        data["selling_price"] = Decimal(selling_price).quantize(Decimal("0.01"))
+
+    for key, value in data.items():
+        setattr(offer, key, value)
+
+    offer.save(update_fields=data.keys())
+
+    if calculate_max:
+        calculate_max_wholesale_offer_from_offer(offer, affect_carts=affect_carts)
+
+    return offer

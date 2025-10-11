@@ -40,6 +40,10 @@ class OfferReadSerializer(BaseModelSerializer):
             "selling_discount_percentage",
             "selling_price",
             "is_max",
+            "is_wholesale",
+            "wholesale_min_quantity",
+            "wholesale_increment",
+            "is_max_wholesale",
             "created_at",
             "actual_discount_precentage",
             "actual_offer_price",
@@ -76,6 +80,9 @@ class OfferCreateSerializer(BaseModelSerializer):
             "operating_number",
             "product_expiry_date",
             "user",
+            "is_wholesale",
+            "wholesale_min_quantity",
+            "wholesale_increment",
         ]
         extra_kwargs = {
             # تم إزالة product_code من هنا لأنه أصبح IntegerField بدلاً من PrimaryKeyRelatedField
@@ -89,6 +96,7 @@ class OfferCreateSerializer(BaseModelSerializer):
         available_amount = attrs.get("available_amount")
         purchase_discount_percentage = attrs.get("purchase_discount_percentage")
         specified_user = attrs.get("user")
+        is_wholesale = attrs.get("is_wholesale", False)
 
         # تحديد المستخدم المستهدف
         request_user = self.context.get('request').user
@@ -154,6 +162,20 @@ class OfferCreateSerializer(BaseModelSerializer):
                 raise ValidationError({"user": "Specified user must be a store."})
             
             target_user = specified_user
+        
+        # التحقق من أن المتجر لديه company=True إذا كان العرض للجملة
+        if is_wholesale:
+            try:
+                store_profile = getattr(target_user, 'store', None)
+                if store_profile is None:
+                    raise ValidationError({"is_wholesale": "Store profile not found."})
+                
+                if not store_profile.company:
+                    raise ValidationError({
+                        "is_wholesale": "عروض الجملة متاحة فقط للمتاجر المسجلة كشركات (company=True)."
+                    })
+            except AttributeError:
+                raise ValidationError({"is_wholesale": "Store profile not found."})
 
         public_price = final_product_code.product.public_price
 
@@ -174,7 +196,12 @@ class OfferCreateSerializer(BaseModelSerializer):
     def create(self, validated_data):
         with transaction.atomic():
             instance = super().create(validated_data)
-            calculate_max_offer_from_offer(instance)
+            # حساب أفضل عرض بناءً على نوع العرض (عادي أو جملة)
+            if instance.is_wholesale:
+                from offers.utils import calculate_max_wholesale_offer_from_offer
+                calculate_max_wholesale_offer_from_offer(instance)
+            else:
+                calculate_max_offer_from_offer(instance)
 
         return instance
 
@@ -255,9 +282,13 @@ class OfferUpdateSerializer(BaseModelSerializer):
             "selling_discount_percentage",
             "selling_price",
             "is_max",
+            "is_wholesale",
+            "wholesale_min_quantity",
+            "wholesale_increment",
+            "is_max_wholesale",
             "created_at",
         ]
-        read_only_fields = ["purchase_price", "selling_price", "created_at"]
+        read_only_fields = ["purchase_price", "selling_price", "created_at", "is_wholesale"]
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -316,6 +347,8 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
     user = serializers.PrimaryKeyRelatedField(
         queryset=get_model("accounts", "User").objects.select_related("profile").all(), required=True, write_only=True
     )
+    is_wholesale = serializers.BooleanField(default=False, write_only=True)
+    
     required_columns = [
         "product_code",
         "available_amount",
@@ -325,6 +358,10 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
         "product_expiry_date",
         "operating_number",
     ]
+    optional_columns = [
+        "wholesale_min_quantity",
+        "wholesale_increment",
+    ]
     additional_values = [
         "product",
         "user",
@@ -332,6 +369,7 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
         "selling_discount_percentage",
         "selling_price",
         "purchase_price",
+        "is_wholesale",
     ]
 
     def validate_column_product_code(self, value, line_number):
@@ -505,6 +543,50 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
         if value is None:
             return ""
         return str(value)
+    
+    def validate_column_wholesale_min_quantity(self, value, line_number):
+        if value is None or value == "":
+            return 10  # القيمة الافتراضية
+        
+        try:
+            validated_value = int(value)
+        except (ValueError, TypeError):
+            raise serializers.ValidationError(
+                _("in line {line_number}, Wholesale min quantity should be an integer.").format(
+                    line_number=line_number
+                )
+            )
+        
+        if validated_value < 1:
+            raise serializers.ValidationError(
+                _("in line {line_number}, Wholesale min quantity should be greater than 0.").format(
+                    line_number=line_number
+                )
+            )
+        
+        return validated_value
+    
+    def validate_column_wholesale_increment(self, value, line_number):
+        if value is None or value == "":
+            return 5  # القيمة الافتراضية
+        
+        try:
+            validated_value = int(value)
+        except (ValueError, TypeError):
+            raise serializers.ValidationError(
+                _("in line {line_number}, Wholesale increment should be an integer.").format(
+                    line_number=line_number
+                )
+            )
+        
+        if validated_value < 1:
+            raise serializers.ValidationError(
+                _("in line {line_number}, Wholesale increment should be greater than 0.").format(
+                    line_number=line_number
+                )
+            )
+        
+        return validated_value
 
     def get_value_user(self, row_values, validated_row_values, line_number):
         return self.user
@@ -541,16 +623,39 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
         )
         selling_price = Decimal(public_price * (1 - selling_discount_percentage / 100)).quantize(Decimal("0.00"))
         return selling_price
+    
+    def get_value_is_wholesale(self, row_values, validated_row_values, line_number):
+        return self.is_wholesale_flag
 
     def validate(self, attrs):
         user = attrs.get("user", None)
         user_profile = getattr(user, "profile", None)
+        is_wholesale = attrs.get("is_wholesale", False)
 
         if user_profile is None:
             raise serializers.ValidationError({"detail": _("User has no profile, Please contract support.")})
+        
+        # التحقق من أن المتجر لديه company=True إذا كان العرض للجملة
+        if is_wholesale:
+            try:
+                store_profile = getattr(user, 'store', None)
+                if store_profile is None or not hasattr(store_profile, 'company'):
+                    raise serializers.ValidationError({
+                        "is_wholesale": "Store profile not found."
+                    })
+                
+                if not store_profile.company:
+                    raise serializers.ValidationError({
+                        "is_wholesale": "عروض الجملة متاحة فقط للمتاجر المسجلة كشركات (company=True)."
+                    })
+            except AttributeError:
+                raise serializers.ValidationError({
+                    "is_wholesale": "Store profile not found."
+                })
 
         self.user = user
         self.user_profile = user_profile
+        self.is_wholesale_flag = is_wholesale
         
         # Store the request user for admin checks
         if hasattr(self.context.get('request'), 'user'):
@@ -579,9 +684,14 @@ class OfferUploaderSerializer(BaseUploaderSerializer):
                 offers_list.append(offer_instance)
                 products_set.add(row_data.get("product").pk)
 
-            # self.set_max_offers_and_update_carts(products_set)
-            for product_id in products_set:
-                calculate_max_offer(product_id)
+            # حساب أفضل العروض بناءً على نوع العرض
+            if self.is_wholesale_flag:
+                from offers.utils import calculate_max_wholesale_offer
+                for product_id in products_set:
+                    calculate_max_wholesale_offer(product_id)
+            else:
+                for product_id in products_set:
+                    calculate_max_offer(product_id)
 
         return offers_list
 

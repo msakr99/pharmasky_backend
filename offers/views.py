@@ -372,3 +372,304 @@ class UserOfferCreateAPIView(CreateAPIView):
     permission_classes = [PharmacyRoleAuthentication]
     serializer_class = UserOfferCreateSerializer
     queryset = Offer.objects.none()
+
+
+# ============================================
+# Views خاصة بعروض الجملة (Wholesale Offers)
+# ============================================
+
+class WholesaleOffersListAPIView(ListAPIView):
+    """
+    قائمة جميع عروض الجملة - للاستخدام الداخلي والإدارة
+    """
+    permission_classes = [SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication]
+    serializer_class = OfferReadSerializer
+    pagination_class = CustomPageNumberPagination
+    filterset_class = OfferFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["product__name", "product__e_name"]
+    ordering_fields = [
+        "product__name",
+        "product__e_name",
+        "product__public_price",
+        "purchase_discount_percentage",
+        "purchase_price",
+        "selling_discount_percentage",
+        "selling_price",
+        "user__name",
+        "wholesale_min_quantity",
+        "min_purchase",
+    ]
+
+    def get_queryset(self):
+        queryset = Offer.objects.select_related(
+            "product_code", "product", "user"
+        ).filter(is_wholesale=True)
+        return queryset
+
+
+class MaxWholesaleOfferListAPIView(ListAPIView):
+    """
+    قائمة أفضل عروض الجملة - للصيدليات والشركات
+    هذه القائمة منفصلة تماماً عن maxoffers العادية
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | 
+        PharmacyRoleAuthentication | ManagerRoleAuthentication
+    ]
+    serializer_class = OfferReadSerializer
+    pagination_class = CustomPageNumberPagination
+    filterset_class = OfferFilter
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = [
+        "product__name",
+        "product__e_name",
+        "product__public_price",
+        "selling_discount_percentage",
+        "user__name",
+        "selling_price",
+        "product__needed",
+        "min_purchase",
+        "wholesale_min_quantity",
+    ]
+
+    def get_queryset(self):
+        user = self.request.user
+        search_term = self.request.query_params.get('search', '').strip()
+        
+        logger.info(f"[MaxWholesaleOfferListAPIView] User: {user.username}, Search term: '{search_term}'")
+
+        actual_discount_precentage = models.F("selling_discount_percentage") - Decimal("0.00")
+        actual_offer_price = models.F("selling_price")
+
+        if user.role == Role.PHARMACY:
+            try:
+                profile = getattr(user, "profile")
+                payment_period = getattr(profile, "payment_period")
+                additional_fees_percentage = payment_period.addition_percentage
+            except Exception:
+                raise ValidationError({"detail": "Couldn't get pharmacy payment period."})
+            else:
+                actual_discount_precentage = models.F("selling_discount_percentage") - additional_fees_percentage
+                actual_offer_price = models.F("product__public_price") * (1 - (actual_discount_precentage / 100))
+
+        queryset = (
+            Offer.objects.filter(
+                remaining_amount__gt=0, 
+                is_wholesale=True, 
+                is_max_wholesale=True
+            )
+            .select_related("product_code", "product", "user")
+            .annotate(
+                actual_discount_precentage=actual_discount_precentage,
+                actual_offer_price=actual_offer_price,
+            )
+        )
+        
+        initial_count = queryset.count()
+        logger.info(f"[MaxWholesaleOfferListAPIView] Initial queryset count: {initial_count}")
+
+        # Apply search filter manually
+        if search_term:
+            queryset = queryset.filter(
+                models.Q(product__name__icontains=search_term) |
+                models.Q(product__e_name__icontains=search_term)
+            )
+            final_count = queryset.count()
+            logger.info(f"[MaxWholesaleOfferListAPIView] After search filter count: {final_count}")
+
+        return queryset
+
+
+class WholesaleOfferCreateAPIView(CreateAPIView):
+    """
+    إنشاء عرض جملة جديد
+    يتحقق تلقائياً من أن المتجر لديه company=True
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | 
+        ManagerRoleAuthentication | AdminRoleAuthentication
+    ]
+    serializer_class = OfferCreateSerializer
+    queryset = Offer.objects.none()
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # إضافة علامة أن هذا عرض جملة
+        context['force_wholesale'] = True
+        return context
+
+
+class WholesaleOfferUploadAPIView(CreateAPIView):
+    """
+    رفع عروض جملة من ملف Excel
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | 
+        ManagerRoleAuthentication | AdminRoleAuthentication
+    ]
+    serializer_class = OfferUploaderSerializer
+    queryset = Offer.objects.none()
+
+    def post(self, request, *args, **kwargs):
+        """
+        معالجة رفع ملف Excel لعروض الجملة
+        """
+        try:
+            # إضافة is_wholesale=True للبيانات
+            data = request.data.copy()
+            data['is_wholesale'] = True
+            
+            serializer = self.get_serializer(data=data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            
+            # معالجة العروض المرفوعة
+            offers = serializer.save()
+            
+            return Response({
+                'message': f'تم رفع {len(offers)} عرض جملة بنجاح',
+                'count': len(offers),
+                'offers': [offer.id for offer in offers]
+            }, status=201)
+            
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء رفع عروض الجملة',
+                'details': str(e)
+            }, status=400)
+
+
+class WholesaleOfferUpdateAPIView(UpdateAPIView):
+    """
+    تحديث عرض جملة
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication
+    ]
+    serializer_class = OfferUpdateSerializer
+    
+    def get_queryset(self):
+        return Offer.objects.select_related(
+            "product_code", "product", "user"
+        ).filter(is_wholesale=True)
+
+
+class WholesaleOfferDestroyAPIView(DestroyAPIView):
+    """
+    حذف عرض جملة
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication
+    ]
+    serializer_class = OfferReadSerializer
+    
+    def get_queryset(self):
+        return Offer.objects.select_related("product").filter(is_wholesale=True)
+
+    def perform_destroy(self, instance):
+        delete_offer(instance)
+
+
+class WholesaleOfferDownloadExcelAPIView(XLSXFileMixin, ListAPIView):
+    """
+    تحميل عروض الجملة كملف Excel
+    """
+    permission_classes = [
+        SalesRoleAuthentication | DataEntryRoleAuthentication | ManagerRoleAuthentication
+    ]
+    serializer_class = OfferExcelReadSerialzier
+    renderer_classes = [XLSXRenderer]
+    filterset_class = OfferFilter
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["product__name", "product__e_name"]
+    ordering_fields = [
+        "id",
+        "product__name",
+        "product__public_price",
+        "selling_discount_percentage",
+        "user__name",
+        "selling_price",
+        "product__needed",
+        "min_purchase",
+    ]
+    body = get_excel_body()
+
+    def get_header(self):
+        return get_excel_header(tab_name="Wholesale Offers Report", header_title="Wholesale Offers Report")
+
+    def get_column_header(self):
+        titles = [
+            "Product code", "Product name", "Seller", "Price", "Discount %", 
+            "Actual Discount %", "Actual Price", "Min Quantity", "Increment", "Payment Period"
+        ]
+        return get_excel_column_header(titles=titles)
+
+    def get_filename(self, request=None, *args, **kwargs):
+        NOW = timezone.now().strftime("%d-%m-%Y-%H-%M-%S")
+        return f"Pharmasky Wholesale offers report - {NOW}.xlsx"
+
+    def get_queryset(self):
+        payment_period_id = self.request.query_params.get('payment_period', None)
+        
+        queryset = Offer.objects.select_related(
+            "product_code", "product", "user"
+        ).filter(is_max_wholesale=True, is_wholesale=True)
+        
+        if payment_period_id:
+            try:
+                from profiles.models import PaymentPeriod
+                payment_period = PaymentPeriod.objects.get(id=payment_period_id)
+                additional_fees_percentage = payment_period.addition_percentage
+                
+                queryset = queryset.annotate(
+                    product_seller_code=models.F("product_code__code"),
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage") - additional_fees_percentage,
+                    actual_offer_price=models.F("product__public_price") * (1 - ((models.F("selling_discount_percentage") - additional_fees_percentage) / 100)),
+                    payment_period_name=models.Value(payment_period.name, output_field=models.CharField()),
+                    min_quantity=models.F("wholesale_min_quantity"),
+                    increment=models.F("wholesale_increment"),
+                )
+            except Exception:
+                queryset = queryset.annotate(
+                    product_seller_code=models.F("product_code__code"),
+                    product_name=models.F("product__name"),
+                    seller_name=models.F("user__name"),
+                    public_price=models.F("product__public_price"),
+                    actual_discount_percentage=models.F("selling_discount_percentage"),
+                    actual_offer_price=models.F("selling_price"),
+                    payment_period_name=models.Value("", output_field=models.CharField()),
+                    min_quantity=models.F("wholesale_min_quantity"),
+                    increment=models.F("wholesale_increment"),
+                )
+        else:
+            queryset = queryset.annotate(
+                product_seller_code=models.F("product_code__code"),
+                product_name=models.F("product__name"),
+                seller_name=models.F("user__name"),
+                public_price=models.F("product__public_price"),
+                actual_discount_percentage=models.F("selling_discount_percentage"),
+                actual_offer_price=models.F("selling_price"),
+                payment_period_name=models.Value("", output_field=models.CharField()),
+                min_quantity=models.F("wholesale_min_quantity"),
+                increment=models.F("wholesale_increment"),
+            )
+        
+        queryset = queryset.values(
+            "product_seller_code",
+            "product_name",
+            "seller_name",
+            "public_price",
+            "selling_discount_percentage",
+            "actual_discount_percentage",
+            "actual_offer_price",
+            "min_quantity",
+            "increment",
+            "payment_period_name",
+            "created_at",
+        )
+        
+        return queryset

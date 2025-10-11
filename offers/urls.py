@@ -54,4 +54,43 @@ urlpatterns = [
         views.UserOfferCreateAPIView.as_view(),
         name="user-offers-create-view",
     ),
+    
+    # ==========================================
+    # URLs خاصة بعروض الجملة (Wholesale Offers)
+    # ==========================================
+    path(
+        "wholesale-offers/",
+        views.WholesaleOffersListAPIView.as_view(),
+        name="wholesale-offers-list-view",
+    ),
+    path(
+        "max-wholesale-offers/",
+        views.MaxWholesaleOfferListAPIView.as_view(),
+        name="max-wholesale-offers-list-view",
+    ),
+    path(
+        "wholesale-offers/create/",
+        views.WholesaleOfferCreateAPIView.as_view(),
+        name="wholesale-offers-create-view",
+    ),
+    path(
+        "wholesale-offers/upload/",
+        views.WholesaleOfferUploadAPIView.as_view(),
+        name="wholesale-offers-upload-view",
+    ),
+    path(
+        "wholesale-offers/<int:pk>/change/",
+        views.WholesaleOfferUpdateAPIView.as_view(),
+        name="wholesale-offers-update-view",
+    ),
+    path(
+        "wholesale-offers/<int:pk>/destroy/",
+        views.WholesaleOfferDestroyAPIView.as_view(),
+        name="wholesale-offers-delete-view",
+    ),
+    path(
+        "max-wholesale-offers/excel/",
+        views.WholesaleOfferDownloadExcelAPIView.as_view(),
+        name="max-wholesale-offers-excel-view",
+    ),
 ]

@@ -34,6 +34,22 @@ class Offer(models.Model):
     selling_discount_percentage = models.DecimalField(max_digits=4, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
     is_max = models.BooleanField(default=False)
+    
+    # حقول الجملة
+    is_wholesale = models.BooleanField(default=False, help_text="هل هذا عرض جملة؟")
+    wholesale_min_quantity = models.PositiveIntegerField(
+        default=10, 
+        help_text="الحد الأدنى للطلب من الصنف (افتراضي: 10 علب)"
+    )
+    wholesale_increment = models.PositiveIntegerField(
+        default=5,
+        help_text="مقدار الزيادة المسموح بها (افتراضي: 5 علب)"
+    )
+    is_max_wholesale = models.BooleanField(
+        default=False, 
+        help_text="هل هذا أفضل عرض جملة للمنتج؟"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
