@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, models
 
 from profiles.utils import update_user_profile
+from finance.serializers import AccountReadSerializer
 
 
 class AreaReadSerializer(BaseModelSerializer):
@@ -35,14 +36,24 @@ class PaymentPeriodReadSerializer(BaseModelSerializer):
 
 
 class UserProfileReadSerializer(BaseModelSerializer):
+    class MainUserReadSerializer(BaseModelSerializer):
+        """Serializer for the main user with account details"""
+        role_label = serializers.CharField(source="get_role_display", read_only=True)
+        account = AccountReadSerializer()
+        
+        class Meta:
+            model = get_user_model()
+            fields = ["id", "name", "e_name", "username", "role", "role_label", "account"]
+    
     class UserSubReadSerializer(BaseModelSerializer):
+        """Serializer for staff users (data_entry, sales, etc.) without account"""
         role_label = serializers.CharField(source="get_role_display", read_only=True)
         
         class Meta:
             model = get_user_model()
             fields = ["id", "name", "e_name", "username", "role", "role_label"]
 
-    user = UserSubReadSerializer()
+    user = MainUserReadSerializer()
     data_entry = UserSubReadSerializer()
     sales = UserSubReadSerializer()
     manager = UserSubReadSerializer()
