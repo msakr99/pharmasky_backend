@@ -8,11 +8,12 @@ from finance.models import AccountTransaction, PurchasePayment, SalePayment
 
 class AccountTransactionFilter(filters.FilterSet):
     account = ListIDFilter(field_name="account__pk")
+    user = ListIDFilter(field_name="account__user__pk")
     type = filters.ChoiceFilter(field_name="type", choices=AccountTransactionTypeChoice.choices)
 
     class Meta:
         model = AccountTransaction
-        fields = ["account", "type"]
+        fields = ["account", "user", "type"]
 
 
 class PurchasePaymentFilter(filters.FilterSet):
