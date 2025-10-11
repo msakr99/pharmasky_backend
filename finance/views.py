@@ -833,6 +833,11 @@ class AccountStatementPDFAPIView(PDFFileMixin, GenericAPIView):
             user_obj = User.objects.select_related('account').get(pk=user_id)
             account = getattr(user_obj, 'account', None)
             
+            # Set context variables early (before finalize_response is called)
+            self.customer_name = user_obj.name
+            self.username = str(user_obj.username)
+            self.current_balance = account.balance if account else Decimal('0.00')
+            
             if not account:
                 return Response({
                     'error': 'User does not have an account'
@@ -892,11 +897,6 @@ class AccountStatementPDFAPIView(PDFFileMixin, GenericAPIView):
         
         # Reverse to show newest first in PDF
         statement_data.reverse()
-        
-        # Set context variables
-        self.customer_name = user_obj.name
-        self.username = str(user_obj.username)
-        self.current_balance = account.balance
         
         # Serialize
         serializer = self.get_serializer(statement_data, many=True)
