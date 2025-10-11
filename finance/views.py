@@ -24,7 +24,7 @@ from finance.serializers import (
 from finance.utils import delete_payment
 from rest_framework.response import Response
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 get_model = apps.get_model
 
@@ -395,6 +395,12 @@ class CollectionScheduleAPIView(GenericAPIView):
     قائمة مواعيد التحصيلات المتوقعة
     Collection Schedule - Expected payment dates based on payment periods
     
+    Query Parameters:
+    - search: البحث باسم العميل أو رقم الهاتف
+    - date_from: تاريخ البداية (YYYY-MM-DD)
+    - date_to: تاريخ النهاية (YYYY-MM-DD)
+    - overdue_only: فقط المتأخرين (true/false)
+    
     Returns list of pharmacies with:
     - Customer name (اسم العميل)
     - Expected collection date (تاريخ التحصيل المتوقع)
@@ -408,6 +414,12 @@ class CollectionScheduleAPIView(GenericAPIView):
         User = get_user_model()
         current_date = timezone.now()
         
+        # Get query parameters
+        search_term = request.query_params.get('search', '').strip()
+        date_from = request.query_params.get('date_from', None)
+        date_to = request.query_params.get('date_to', None)
+        overdue_only = request.query_params.get('overdue_only', '').lower() == 'true'
+        
         # Get all pharmacies with payment periods and negative balance (مديونين)
         pharmacies = (
             User.objects
@@ -415,6 +427,14 @@ class CollectionScheduleAPIView(GenericAPIView):
             .select_related('profile', 'profile__payment_period', 'account')
             .exclude(account__balance__gte=0)  # Only those with debt (balance < 0)
         )
+        
+        # Apply search filter
+        if search_term:
+            pharmacies = pharmacies.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(e_name__icontains=search_term) |
+                models.Q(username__icontains=search_term)
+            )
         
         # Filter based on user role
         user = request.user
@@ -480,7 +500,8 @@ class CollectionScheduleAPIView(GenericAPIView):
                     cashback_amount = (outstanding_balance * cashback_percentage * early_days) / 100
                     total_with_cashback = outstanding_balance - cashback_amount
             
-            schedule_data.append({
+            # Create schedule entry
+            entry = {
                 'user_id': pharmacy.id,
                 'customer_name': pharmacy.name,
                 'username': str(pharmacy.username),
@@ -499,8 +520,31 @@ class CollectionScheduleAPIView(GenericAPIView):
                 'cashback_percentage': cashback_percentage,
                 'cashback_amount': cashback_amount,
                 'total_with_cashback': total_with_cashback,
-            })
+            }
             
+            # Apply overdue filter
+            if overdue_only and not is_overdue:
+                continue
+            
+            # Apply date range filter
+            if expected_date:
+                if date_from:
+                    try:
+                        date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                        if expected_date < date_from_obj:
+                            continue
+                    except ValueError:
+                        pass  # Invalid date format, skip filter
+                
+                if date_to:
+                    try:
+                        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                        if expected_date > date_to_obj:
+                            continue
+                    except ValueError:
+                        pass  # Invalid date format, skip filter
+            
+            schedule_data.append(entry)
             total_outstanding += outstanding_balance
         
         # Sort by expected collection date (overdue first, then by date)
