@@ -992,10 +992,10 @@ class UserFinancialSummaryAPIView(GenericAPIView):
             account = user_obj.account
             
             # Base querysets with date filtering
-            purchase_invoices = PurchaseInvoice.objects.filter(store=user_obj)
-            sale_invoices = SaleInvoice.objects.filter(pharmacy=user_obj)
-            purchase_returns = PurchaseReturnInvoice.objects.filter(store=user_obj)
-            sale_returns = SaleReturnInvoice.objects.filter(pharmacy=user_obj)
+            purchase_invoices = PurchaseInvoice.objects.filter(user=user_obj)
+            sale_invoices = SaleInvoice.objects.filter(user=user_obj)
+            purchase_returns = PurchaseReturnInvoice.objects.filter(user=user_obj)
+            sale_returns = SaleReturnInvoice.objects.filter(user=user_obj)
             purchase_payments = PurchasePayment.objects.filter(user=user_obj)
             sale_payments = SalePayment.objects.filter(user=user_obj)
             
