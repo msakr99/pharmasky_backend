@@ -245,3 +245,19 @@ class CollectionScheduleSerializer(BaseSerializer):
     cashback_percentage = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
     cashback_amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
     total_with_cashback = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+
+
+class AccountsPayableSerializer(BaseSerializer):
+    """
+    Serializer for accounts payable (الحسابات الدائنة - الفلوس اللي علينا)
+    Shows stores/suppliers we owe money to
+    """
+    user_id = serializers.IntegerField(read_only=True)
+    supplier_name = serializers.CharField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    role = serializers.CharField(read_only=True)
+    role_label = serializers.CharField(read_only=True)
+    amount_owed = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    last_payment_date = serializers.DateTimeField(read_only=True, required=False, allow_null=True)
+    last_purchase_date = serializers.DateTimeField(read_only=True, required=False, allow_null=True)
+    days_since_last_payment = serializers.IntegerField(read_only=True, required=False)

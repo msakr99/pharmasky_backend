@@ -94,4 +94,9 @@ urlpatterns = [
         views.CollectionScheduleAPIView.as_view(),
         name="collection-schedule-view",
     ),
+    path(
+        "accounts-payable/",
+        views.AccountsPayableAPIView.as_view(),
+        name="accounts-payable-view",
+    ),
 ]

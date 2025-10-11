@@ -20,6 +20,7 @@ from finance.serializers import (
     SalePaymentUpdateSerializer,
     ExpenseSerializer,
     CollectionScheduleSerializer,
+    AccountsPayableSerializer,
 )
 from finance.utils import delete_payment
 from rest_framework.response import Response
@@ -561,5 +562,114 @@ class CollectionScheduleAPIView(GenericAPIView):
         return Response({
             'count': len(schedule_data),
             'total_outstanding_amount': total_outstanding,
+            'results': serializer.data
+        })
+
+
+class AccountsPayableAPIView(GenericAPIView):
+    """
+    قائمة الحسابات الدائنة - الفلوس اللي علينا
+    Accounts Payable - Money we owe to suppliers/stores
+    
+    Query Parameters:
+    - search: البحث باسم المورد أو رقم الهاتف
+    - role: فلتر حسب نوع المستخدم (STORE, SALES, etc.)
+    - min_amount: الحد الأدنى للمبلغ
+    
+    Returns list of suppliers/stores with positive balance (we owe them)
+    """
+    permission_classes = [ManagerRoleAuthentication]
+    serializer_class = AccountsPayableSerializer
+    
+    def get(self, request, *args, **kwargs):
+        User = get_user_model()
+        current_date = timezone.now()
+        
+        # Get query parameters
+        search_term = request.query_params.get('search', '').strip()
+        role_filter = request.query_params.get('role', '').strip().upper()
+        min_amount = request.query_params.get('min_amount', None)
+        
+        # Get all users with positive balance (we owe them money)
+        # positive balance = الشركة مديونة لهم
+        accounts = (
+            Account.objects
+            .filter(balance__gt=0)
+            .select_related('user')
+        )
+        
+        # Apply search filter on user
+        if search_term:
+            accounts = accounts.filter(
+                models.Q(user__name__icontains=search_term) |
+                models.Q(user__e_name__icontains=search_term) |
+                models.Q(user__username__icontains=search_term)
+            )
+        
+        # Apply role filter
+        if role_filter:
+            accounts = accounts.filter(user__role=role_filter)
+        
+        # Apply minimum amount filter
+        if min_amount:
+            try:
+                min_amount_decimal = Decimal(min_amount)
+                accounts = accounts.filter(balance__gte=min_amount_decimal)
+            except (ValueError, TypeError):
+                pass  # Invalid number, skip filter
+        
+        # Build accounts payable data
+        payable_data = []
+        total_payable = Decimal('0.00')
+        
+        for account in accounts:
+            user = account.user
+            amount_owed = account.balance
+            
+            # Get last payment date
+            last_payment = PurchasePayment.objects.filter(
+                user=user
+            ).order_by('-at').first()
+            
+            last_payment_date = last_payment.at if last_payment else None
+            days_since_last_payment = None
+            
+            if last_payment_date:
+                days_since_last_payment = (current_date - last_payment_date).days
+            
+            # Get last purchase date (from invoices)
+            last_purchase_invoice = get_model('invoices', 'PurchaseInvoice').objects.filter(
+                store=user
+            ).order_by('-created_at').first()
+            
+            last_purchase_date = last_purchase_invoice.created_at if last_purchase_invoice else None
+            
+            # Get role label
+            role_label = user.get_role_display() if hasattr(user, 'get_role_display') else user.role
+            
+            entry = {
+                'user_id': user.id,
+                'supplier_name': user.name,
+                'username': str(user.username),
+                'role': user.role,
+                'role_label': role_label,
+                'amount_owed': amount_owed,
+                'last_payment_date': last_payment_date,
+                'last_purchase_date': last_purchase_date,
+                'days_since_last_payment': days_since_last_payment or 0,
+            }
+            
+            payable_data.append(entry)
+            total_payable += amount_owed
+        
+        # Sort by amount owed (descending)
+        payable_data.sort(key=lambda x: x['amount_owed'], reverse=True)
+        
+        # Serialize data
+        serializer = self.get_serializer(payable_data, many=True)
+        
+        return Response({
+            'count': len(payable_data),
+            'total_payable_amount': total_payable,
             'results': serializer.data
         })
