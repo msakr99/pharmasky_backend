@@ -54,10 +54,11 @@ class AccountUpdateSerializer(BaseModelSerializer):
 class AccountTransactionReadSerializer(BaseModelSerializer):
     type_label = serializers.CharField(source="get_type_display", read_only=True)
     ct = serializers.CharField(source="content_type.model", read_only=True)
+    balance_after = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True, required=False)
 
     class Meta:
         model = AccountTransaction
-        fields = ["id", "type", "type_label", "amount", "at", "ct", "object_id", "timestamp"]
+        fields = ["id", "type", "type_label", "amount", "at", "ct", "object_id", "balance_after", "timestamp"]
 
 
 class PurchasePaymentReadSerializer(BaseModelSerializer):

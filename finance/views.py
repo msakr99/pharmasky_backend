@@ -1,5 +1,7 @@
 from decimal import Decimal
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView, GenericAPIView
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 from django.db import models
 from django.apps import apps
 from django.contrib.auth import get_user_model
@@ -58,13 +60,14 @@ class AccountUpdateAPIView(UpdateAPIView):
 class AccountTransactionListAPIView(ListAPIView):
     permission_classes = [StaffRoleAuthentication]
     serializer_class = AccountTransactionReadSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = AccountTransactionFilter
-    oredering = ("-at",)
+    ordering = ("-at",)
 
     def get_queryset(self):
         user = self.request.user
 
-        queryset = AccountTransaction.objects.all()
+        queryset = AccountTransaction.objects.select_related('account').all()
 
         if user.is_superuser:
             return queryset
@@ -92,12 +95,95 @@ class AccountTransactionListAPIView(ListAPIView):
                 )
 
         return queryset
+    
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to add running balance calculation
+        """
+        from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Get account from query params to calculate running balance
+        account_id = request.query_params.get('account', None)
+        user_id = request.query_params.get('user', None)
+        
+        # Order by date (oldest first) to calculate running balance
+        transactions = queryset.order_by('at', 'id')
+        
+        # Calculate running balance if filtering by specific account/user
+        if account_id or user_id:
+            # Get the account
+            account = None
+            if account_id:
+                try:
+                    account = Account.objects.get(pk=account_id)
+                except Account.DoesNotExist:
+                    pass
+            elif user_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    user_obj = User.objects.get(pk=user_id)
+                    account = getattr(user_obj, 'account', None)
+                except:
+                    pass
+            
+            if account:
+                # Get all transactions for this account ordered by date
+                all_transactions = AccountTransaction.objects.filter(
+                    account=account
+                ).order_by('at', 'id')
+                
+                # Calculate running balance for each transaction
+                running_balance = Decimal('0.00')
+                transaction_balances = {}
+                
+                for txn in all_transactions:
+                    # Determine if this transaction increases or decreases balance
+                    if txn.type in NEGATIVE_AFFECTING_TRANSACTIONS:
+                        running_balance -= txn.amount
+                    elif txn.type in POSTIVE_AFFECTING_TRANSACTIONS:
+                        running_balance += txn.amount
+                    
+                    transaction_balances[txn.id] = running_balance
+                
+                # Add balance_after to each transaction in queryset
+                transactions_list = list(transactions)
+                for txn in transactions_list:
+                    txn.balance_after = transaction_balances.get(txn.id, Decimal('0.00'))
+                
+                # Reverse to show newest first
+                transactions_list.reverse()
+                
+                # Paginate if needed
+                page = self.paginate_queryset(transactions_list)
+                if page is not None:
+                    serializer = self.get_serializer(page, many=True)
+                    return self.get_paginated_response(serializer.data)
+                
+                serializer = self.get_serializer(transactions_list, many=True)
+                return Response(serializer.data)
+        
+        # If no specific account, return without running balance
+        # Order by newest first for display
+        transactions = queryset.order_by('-at', '-id')
+        page = self.paginate_queryset(transactions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(transactions, many=True)
+        return Response(serializer.data)
 
 
 class PurchasePaymentListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PurchasePaymentReadSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = PurchasePaymentFilter
+    search_fields = ["user__name", "user__e_name", "user__username", "remarks"]
+    ordering = ("-at",)
 
     def get_queryset(self):
         user = self.request.user
@@ -184,7 +270,10 @@ class PurchasePaymentDestroyAPIView(DestroyAPIView):
 class SalePaymentListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SalePaymentReadSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_class = SalePaymentFilter
+    search_fields = ["user__name", "user__e_name", "user__username", "remarks"]
+    ordering = ("-at",)
 
     def get_queryset(self):
         user = self.request.user
