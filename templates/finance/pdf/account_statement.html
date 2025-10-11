@@ -1,0 +1,270 @@
+{% load i18n %} {% load static %}
+{% get_language_info for 'ar' as lang %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>كشف حساب - {{ customer_name }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 1cm;
+
+      @top-right {
+        content: 'التاريخ: {{ timestamp }}';
+        font-size: 10px;
+      }
+
+      @top-left {
+        content: 'كشف حساب - {{ customer_name }}';
+        font-size: 10px;
+      }
+
+      @bottom-right {
+        content: 'صفحة ' counter(page) ' من ' counter(pages);
+        font-size: 10px;
+        margin-bottom: 0.25cm;
+      }
+
+      @bottom-left {
+        content: 'PharmasSky';
+        font-size: 10px;
+        margin-bottom: 0.25cm;
+      }
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      font-size: 11px;
+      direction: rtl;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #333;
+      padding-bottom: 1rem;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .header .subtitle {
+      font-size: 12px;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    .customer-info {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      margin-bottom: 1.5rem;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    .customer-info table {
+      width: 100%;
+    }
+
+    .customer-info td {
+      padding: 0.25rem;
+    }
+
+    .customer-info .label {
+      font-weight: bold;
+      width: 25%;
+      color: #555;
+    }
+
+    .table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+
+    .table-header {
+      background-color: #4CAF50;
+      color: white;
+      border: 1px solid #4CAF50;
+      padding: 0.5rem;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .table-cell {
+      border: 1px solid #ddd;
+      padding: 0.4rem;
+      text-align: center;
+    }
+
+    .table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .table tbody tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .amount-positive {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .amount-negative {
+      color: #f44336;
+      font-weight: bold;
+    }
+
+    .balance-positive {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .balance-negative {
+      color: #f44336;
+      font-weight: bold;
+    }
+
+    .summary {
+      border: 2px solid #333;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      background-color: #f0f0f0;
+    }
+
+    .summary table {
+      width: 100%;
+    }
+
+    .summary td {
+      padding: 0.5rem;
+      font-size: 13px;
+    }
+
+    .summary .label {
+      font-weight: bold;
+      width: 40%;
+    }
+
+    .summary .value {
+      text-align: left;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 10px;
+      color: #888;
+      border-top: 1px solid #ddd;
+      padding-top: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>كشف حساب</h1>
+    <div class="subtitle">Account Statement</div>
+  </div>
+
+  <!-- Customer Info -->
+  <div class="customer-info">
+    <table>
+      <tr>
+        <td class="label">اسم العميل:</td>
+        <td>{{ customer_name }}</td>
+        <td class="label">رقم الهاتف:</td>
+        <td>{{ username }}</td>
+      </tr>
+      <tr>
+        <td class="label">تاريخ الطباعة:</td>
+        <td>{{ timestamp }}</td>
+        <td class="label">الرصيد الحالي:</td>
+        <td>
+          <span class="{% if current_balance < 0 %}balance-negative{% else %}balance-positive{% endif %}">
+            {{ current_balance }} ج.م
+          </span>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Transactions Table -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="table-header">#</th>
+        <th class="table-header">التاريخ</th>
+        <th class="table-header">نوع العملية</th>
+        <th class="table-header">المبلغ</th>
+        <th class="table-header">الرصيد بعد العملية</th>
+        <th class="table-header">ملاحظات</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in data %}
+      <tr>
+        <td class="table-cell">{{ forloop.counter }}</td>
+        <td class="table-cell">{{ item.transaction_date }}</td>
+        <td class="table-cell">{{ item.type_label }}</td>
+        <td class="table-cell">{{ item.amount }} ج.م</td>
+        <td class="table-cell {% if item.balance_after < 0 %}balance-negative{% else %}balance-positive{% endif %}">
+          {{ item.balance_after }} ج.م
+        </td>
+        <td class="table-cell">{{ item.remarks|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="table-cell" style="text-align: center; padding: 2rem;">
+          لا توجد معاملات
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Summary -->
+  <div class="summary">
+    <table>
+      <tr>
+        <td class="label">إجمالي المعاملات:</td>
+        <td class="value">{{ data|length }}</td>
+      </tr>
+      <tr>
+        <td class="label">الرصيد الحالي:</td>
+        <td class="value {% if current_balance < 0 %}balance-negative{% else %}balance-positive{% endif %}">
+          {{ current_balance }} ج.م
+        </td>
+      </tr>
+      <tr>
+        <td class="label">الحالة:</td>
+        <td class="value">
+          {% if current_balance < 0 %}
+          <span class="balance-negative">مديون للشركة</span>
+          {% elif current_balance > 0 %}
+          <span class="balance-positive">الشركة مديونة له</span>
+          {% else %}
+          متعادل
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    تم الطباعة بواسطة نظام PharmasSky - {{ timestamp }}
+  </div>
+</body>
+
+</html>
+

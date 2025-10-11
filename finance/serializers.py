@@ -262,3 +262,14 @@ class AccountsPayableSerializer(BaseSerializer):
     last_payment_date = serializers.DateTimeField(read_only=True, required=False, allow_null=True)
     last_purchase_date = serializers.DateTimeField(read_only=True, required=False, allow_null=True)
     days_since_last_payment = serializers.IntegerField(read_only=True, required=False)
+
+
+class AccountStatementPDFSerializer(BaseSerializer):
+    """
+    Serializer for account statement PDF export
+    """
+    transaction_date = serializers.CharField(read_only=True)
+    type_label = serializers.CharField(read_only=True)
+    amount = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    balance_after = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    remarks = serializers.CharField(read_only=True, required=False, allow_blank=True)

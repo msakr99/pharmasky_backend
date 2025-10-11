@@ -6,6 +6,9 @@ from django.db import models
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from accounts.permissions import *
+from core.views.mixins import PDFFileMixin
+from core.views.renderers import PDFRenderer
+from django.utils.translation import activate
 from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS, SafeTransactionTypeChoice
 from finance.filters import AccountTransactionFilter, PurchasePaymentFilter, SalePaymentFilter
 from finance.models import Account, AccountTransaction, PurchasePayment, SafeTransaction, SalePayment, Expense
@@ -23,6 +26,7 @@ from finance.serializers import (
     ExpenseSerializer,
     CollectionScheduleSerializer,
     AccountsPayableSerializer,
+    AccountStatementPDFSerializer,
 )
 from finance.utils import delete_payment
 from rest_framework.response import Response
@@ -781,3 +785,119 @@ class AccountsPayableAPIView(GenericAPIView):
             'total_payable_amount': total_payable,
             'results': serializer.data
         })
+
+
+class AccountStatementPDFAPIView(PDFFileMixin, GenericAPIView):
+    """
+    طباعة كشف الحساب PDF
+    Account Statement PDF Export
+    
+    Query Parameters:
+    - user: معرف المستخدم (مطلوب)
+    - type: نوع المعاملة (اختياري)
+    """
+    permission_classes = [StaffRoleAuthentication]
+    renderer_classes = [PDFRenderer]
+    serializer_class = AccountStatementPDFSerializer
+    template_name = "finance/pdf/account_statement.html"
+    
+    def get_template_context(self):
+        return {
+            "timestamp": timezone.now().strftime("%d-%m-%Y %H:%M"),
+            "customer_name": self.customer_name,
+            "username": self.username,
+            "current_balance": self.current_balance,
+        }
+    
+    def get_filename(self, request=None, *args, **kwargs):
+        NOW = timezone.now().strftime("%d-%m-%Y")
+        return f"Account Statement - {self.customer_name} - {NOW}.pdf"
+    
+    def get(self, request, *args, **kwargs):
+        from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS
+        
+        activate("ar")
+        
+        # Get user_id from query params
+        user_id = request.query_params.get('user', None)
+        type_filter = request.query_params.get('type', None)
+        
+        if not user_id:
+            return Response({
+                'error': 'user parameter is required'
+            }, status=400)
+        
+        # Get the user and account
+        try:
+            User = get_user_model()
+            user_obj = User.objects.select_related('account').get(pk=user_id)
+            account = getattr(user_obj, 'account', None)
+            
+            if not account:
+                return Response({
+                    'error': 'User does not have an account'
+                }, status=404)
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found'
+            }, status=404)
+        
+        # Check permissions based on role
+        request_user = request.user
+        if not request_user.is_superuser:
+            allowed = False
+            match request_user.role:
+                case Role.SALES:
+                    allowed = (account.user == request_user or 
+                              getattr(user_obj.profile, 'sales', None) == request_user)
+                case Role.MANAGER:
+                    allowed = (account.user == request_user or 
+                              getattr(user_obj.profile, 'manager', None) == request_user)
+                case Role.AREA_MANAGER:
+                    allowed = (account.user == request_user or 
+                              getattr(user_obj.profile, 'area_manager', None) == request_user)
+            
+            if not allowed:
+                return Response({
+                    'error': 'Permission denied'
+                }, status=403)
+        
+        # Get all transactions for this account
+        queryset = AccountTransaction.objects.filter(account=account)
+        
+        if type_filter:
+            queryset = queryset.filter(type=type_filter)
+        
+        # Order by date (oldest first) for running balance calculation
+        transactions = queryset.order_by('at', 'id')
+        
+        # Calculate running balance
+        running_balance = Decimal('0.00')
+        statement_data = []
+        
+        for txn in transactions:
+            # Determine if this transaction increases or decreases balance
+            if txn.type in NEGATIVE_AFFECTING_TRANSACTIONS:
+                running_balance -= txn.amount
+            elif txn.type in POSTIVE_AFFECTING_TRANSACTIONS:
+                running_balance += txn.amount
+            
+            statement_data.append({
+                'transaction_date': txn.at.strftime("%Y-%m-%d %H:%M"),
+                'type_label': txn.get_type_display(),
+                'amount': txn.amount,
+                'balance_after': running_balance,
+                'remarks': getattr(txn.related_object, 'remarks', '') if txn.related_object else '',
+            })
+        
+        # Reverse to show newest first in PDF
+        statement_data.reverse()
+        
+        # Set context variables
+        self.customer_name = user_obj.name
+        self.username = str(user_obj.username)
+        self.current_balance = account.balance
+        
+        # Serialize
+        serializer = self.get_serializer(statement_data, many=True)
+        return Response(serializer.data)
