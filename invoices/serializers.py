@@ -1054,9 +1054,11 @@ class SaleInvoiceCreateSerializer(BaseModelSerializer):
                 {"total_price": f"Total price cannot be less than {total_min_purchase} for the selected items."}
             )
 
-        if settings.MINIMUM_PHARMACY_INVOICE_SUB_TOTAL > total_price:
+        # Use getattr with default value to handle missing settings
+        min_invoice_total = getattr(settings, 'MINIMUM_PHARMACY_INVOICE_SUB_TOTAL', 600)
+        if min_invoice_total > total_price:
             raise serializers.ValidationError(
-                {"total_price": f"Total price cannot be less than {settings.MINIMUM_PHARMACY_INVOICE_SUB_TOTAL}."}
+                {"total_price": f"Total price cannot be less than {min_invoice_total}."}
             )
 
         attrs["items"] = items
