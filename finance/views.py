@@ -1183,8 +1183,8 @@ class MyAccountSummaryAPIView(GenericAPIView):
             'account': {
                 'id': account.id,
                 'balance': float(account.balance),
-                'credit_limit': float(account.credit_limit),
-                'remaining_credit_limit': float(account.remaining_credit_limit),
+                'credit_limit': float(account.credit_limit) if account.credit_limit else 0.00,
+                'remaining_credit': float(account.remaining_credit) if account.remaining_credit else 0.00,
             },
             'period_summary': {
                 'days': days_back,

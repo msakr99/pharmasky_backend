@@ -357,7 +357,7 @@ GET /profiles/user-profile/
     "id": 456,
     "balance": 5000.00,          ← الرصيد
     "credit_limit": 10000.00,    ← حد الائتمان
-    "remaining_credit_limit": 5000.00
+    "remaining_credit": 5000.00  ← الائتمان المتبقي
   },
   ...
 }

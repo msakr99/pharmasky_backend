@@ -65,7 +65,7 @@ GET /finance/my-account-summary/?days=90    # آخر 90 يوم
     "id": 456,
     "balance": 5000.00,
     "credit_limit": 10000.00,
-    "remaining_credit_limit": 5000.00
+    "remaining_credit": 5000.00
   },
   "period_summary": {
     "days": 30,
@@ -110,7 +110,7 @@ GET /finance/my-account-summary/?days=90    # آخر 90 يوم
 ### Account (معلومات الحساب)
 - `balance`: الرصيد الحالي (موجب = لك، سالب = عليك)
 - `credit_limit`: حد الائتمان المسموح
-- `remaining_credit_limit`: الائتمان المتبقي المتاح
+- `remaining_credit`: الائتمان المتبقي المتاح
 
 ### Period Summary (ملخص الفترة)
 - `days`: عدد الأيام المحسوبة
@@ -203,6 +203,7 @@ summary = summary_response.json()
 # 3. اعرض المعلومات
 print(f"الرصيد الحالي: {summary['account']['balance']} جنيه")
 print(f"حد الائتمان: {summary['account']['credit_limit']} جنيه")
+print(f"الائتمان المتبقي: {summary['account']['remaining_credit']} جنيه")
 print(f"المدفوعات آخر 30 يوم: {summary['period_summary']['total_payments_made']} جنيه")
 print(f"عدد المدفوعات: {summary['period_summary']['payments_count']}")
 
@@ -283,7 +284,7 @@ function AccountSummary() {
         
         <div className="credit">
           <h3>حد الائتمان المتبقي</h3>
-          <p>{summary.account.remaining_credit_limit} جنيه</p>
+          <p>{summary.account.remaining_credit} جنيه</p>
         </div>
       </div>
 
@@ -419,7 +420,7 @@ function AccountSummary() {
             // Update UI
             document.getElementById('userName').textContent = data.user.name;
             document.getElementById('balance').textContent = data.account.balance.toFixed(2);
-            document.getElementById('creditLimit').textContent = data.account.remaining_credit_limit.toFixed(2);
+            document.getElementById('creditLimit').textContent = data.account.remaining_credit.toFixed(2);
             document.getElementById('totalPayments').textContent = data.period_summary.total_payments_made.toFixed(2);
             document.getElementById('paymentsCount').textContent = data.period_summary.payments_count;
             

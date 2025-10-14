@@ -74,7 +74,7 @@ curl -X GET http://129.212.140.152/finance/my-account-summary/ \
     "id": 456,
     "balance": 5000.00,                    ← الرصيد
     "credit_limit": 10000.00,              ← حد الائتمان
-    "remaining_credit_limit": 5000.00      ← الائتمان المتبقي
+    "remaining_credit": 5000.00            ← الائتمان المتبقي
   },
   "period_summary": {
     "days": 30,
@@ -141,7 +141,7 @@ summary = requests.get(
 
 # 3. Print Summary
 print(f"الرصيد: {summary['account']['balance']}")
-print(f"حد الائتمان المتبقي: {summary['account']['remaining_credit_limit']}")
+print(f"حد الائتمان المتبقي: {summary['account']['remaining_credit']}")
 print(f"المدفوعات (30 يوم): {summary['period_summary']['total_payments_made']}")
 ```
 
