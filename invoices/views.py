@@ -23,6 +23,7 @@ from invoices.filters import (
     PurchaseReturnInvoiceItemFilter,
     SaleInvoiceFilter,
     SaleInvoiceItemFilter,
+    SaleReturnInvoiceFilter,
     SaleReturnInvoiceItemFilter,
 )
 from invoices.models import (
@@ -1052,8 +1053,9 @@ class SaleInvoiceItemDestroyAPIView(DestroyAPIView):
 class SaleReturnInvoiceListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SaleReturnInvoiceReadSerializer
-    search_fields = ["user__username"]
+    search_fields = ["user__username", "user__name"]
     ordering_fields = ["created_at", "total_price"]
+    filterset_class = SaleReturnInvoiceFilter
 
     def get_queryset(self):
         user = self.request.user

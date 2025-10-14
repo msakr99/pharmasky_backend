@@ -7,6 +7,7 @@ from invoices.models import (
     PurchaseReturnInvoiceItem,
     SaleInvoice,
     SaleInvoiceItem,
+    SaleReturnInvoice,
     SaleReturnInvoiceItem,
 )
 
@@ -66,6 +67,15 @@ class PurchaseReturnInvoiceItemFilter(filters.FilterSet):
     class Meta:
         model = PurchaseReturnInvoiceItem
         fields = ["invoice", "product"]
+
+
+class SaleReturnInvoiceFilter(filters.FilterSet):
+    user = ListIDFilter(field_name="user__pk")
+    status = ListCharFilter(field_name="status")
+
+    class Meta:
+        model = SaleReturnInvoice
+        fields = ["user", "status"]
 
 
 class SaleReturnInvoiceItemFilter(filters.FilterSet):
