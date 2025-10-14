@@ -1111,3 +1111,91 @@ class UserFinancialSummaryAPIView(GenericAPIView):
             'grand_totals': grand_totals,
             'results': serializer.data
         })
+
+
+class MyAccountSummaryAPIView(GenericAPIView):
+    """
+    ملخص الحساب المالي للمستخدم الحالي (للصيدليات والمخازن)
+    My Account Financial Summary - For Pharmacies and Stores
+    
+    This endpoint allows authenticated users (especially pharmacies and stores)
+    to view their own financial summary without needing staff permissions.
+    
+    Returns:
+    - Current balance (الرصيد الحالي)
+    - Credit limit (حد الائتمان)
+    - Remaining credit (الائتمان المتبقي)
+    - Total purchases (إجمالي المشتريات)
+    - Total payments made (إجمالي المدفوعات)
+    - Recent transactions (آخر المعاملات)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        
+        # Get user's account
+        try:
+            account = user.account
+        except:
+            return Response({
+                'error': 'لا يوجد حساب مالي لهذا المستخدم / No financial account found for this user'
+            }, status=404)
+        
+        # Get date range from query params (default: last 30 days)
+        days_back = int(request.query_params.get('days', 30))
+        date_from = timezone.now() - timedelta(days=days_back)
+        
+        # Get purchase payments (المدفوعات)
+        purchase_payments = PurchasePayment.objects.filter(
+            user=user,
+            at__gte=date_from
+        ).aggregate(
+            total=models.Sum('amount'),
+            count=models.Count('id')
+        )
+        
+        # Get sale payments (المقبوضات)
+        sale_payments = SalePayment.objects.filter(
+            user=user,
+            at__gte=date_from
+        ).aggregate(
+            total=models.Sum('amount'),
+            count=models.Count('id')
+        )
+        
+        # Get recent account transactions
+        recent_transactions = AccountTransaction.objects.filter(
+            account=account
+        ).order_by('-at')[:10]
+        
+        from finance.serializers import AccountTransactionReadSerializer
+        transactions_serializer = AccountTransactionReadSerializer(recent_transactions, many=True)
+        
+        # Build response
+        summary = {
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'username': str(user.username),
+                'role': user.role,
+            },
+            'account': {
+                'id': account.id,
+                'balance': float(account.balance),
+                'credit_limit': float(account.credit_limit),
+                'remaining_credit_limit': float(account.remaining_credit_limit),
+            },
+            'period_summary': {
+                'days': days_back,
+                'from_date': date_from.date(),
+                'to_date': timezone.now().date(),
+                'total_payments_made': float(purchase_payments['total'] or 0),
+                'payments_count': purchase_payments['count'],
+                'total_payments_received': float(sale_payments['total'] or 0),
+                'receipts_count': sale_payments['count'],
+            },
+            'recent_transactions': transactions_serializer.data
+        }
+        
+        return Response(summary)
