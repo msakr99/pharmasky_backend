@@ -74,6 +74,35 @@ class LoginAPIView(ObtainAuthToken):
         return Response({"token": token.key, "role": user.role, "new_login": created})
 
 
+class PharmacyLoginAPIView(ObtainAuthToken):
+    """
+    Login API endpoint specifically for pharmacies (role=PHARMACY)
+    Only users with PHARMACY role can login through this endpoint
+    """
+    serializer_class = CustomAuthTokenSerializer
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        
+        # Check if user has PHARMACY role
+        if user.role != Role.PHARMACY:
+            return Response(
+                {"error": "هذا الحساب ليس حساب صيدلية / This account is not a pharmacy account"},
+                status=403
+            )
+        
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            "token": token.key,
+            "role": user.role,
+            "new_login": created,
+            "user_id": user.id,
+            "name": user.name
+        })
+
+
 class UserDataAPIView(GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserReadSerializer

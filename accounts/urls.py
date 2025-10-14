@@ -14,6 +14,11 @@ urlpatterns = [
         name="login-view",
     ),
     path(
+        "pharmacy-login/",
+        views.PharmacyLoginAPIView.as_view(),
+        name="pharmacy-login-view",
+    ),
+    path(
         "users/",
         views.UserListAPIView.as_view(),
         name="users-list-view",
