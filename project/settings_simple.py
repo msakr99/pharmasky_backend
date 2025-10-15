@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'ads',
     'shop',
     'utils',
+    'ai_agent', 
     # Third party apps (moved to end to avoid loading issues)
     # 'django_celery_beat',
     # 'push_notifications',
