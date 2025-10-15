@@ -70,6 +70,7 @@ LOCAL_APPS = [
     "invoices",
     "inventory",
     "notifications",
+    "ai_agent",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -209,4 +210,5 @@ MAX_RETURN_PERIOD_IN_DAYS = 7
 
 # OpenAI API settings
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+DIGITALOCEAN_AGENT_URL = env('DIGITALOCEAN_AGENT_URL', default='https://api.openai.com/v1')
 
