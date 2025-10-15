@@ -169,3 +169,11 @@ LOGGING = {
         'handlers': ['console'],
     },
 }
+
+# OpenAI API settings (for AI Agent)
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+DIGITALOCEAN_AGENT_URL = os.getenv('DIGITALOCEAN_AGENT_URL', 'https://api.openai.com/v1')
+
+# Custom application settings
+MINIMUM_PHARMACY_INVOICE_SUB_TOTAL = 600
+MAX_RETURN_PERIOD_IN_DAYS = 7
