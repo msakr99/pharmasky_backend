@@ -580,7 +580,13 @@ class SaleInvoiceListAPIView(ListAPIView):
 
 
 class SaleInvoiceCreateAPIView(CreateAPIView):
-    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    permission_classes = [
+        SalesRoleAuthentication 
+        | ManagerRoleAuthentication 
+        | AreaManagerRoleAuthentication 
+        | PharmacyRoleAuthentication 
+        | StoreRoleAuthentication
+    ]
     serializer_class = SaleInvoiceCreateSerializer
     queryset = SaleInvoice.objects.all()
     
@@ -589,6 +595,20 @@ class SaleInvoiceCreateAPIView(CreateAPIView):
         import traceback
         
         try:
+            # Validation: If user is PHARMACY or STORE, they can only create invoices for themselves
+            user = request.user
+            user_id_in_request = request.data.get('user')
+            
+            if user.role in [Role.PHARMACY, Role.STORE]:
+                if user_id_in_request and int(user_id_in_request) != user.id:
+                    return Response({
+                        "error": "الصيدليات والمخازن يمكنها فقط إنشاء فواتير لأنفسها / Pharmacies and stores can only create invoices for themselves",
+                        "detail": f"يجب أن يكون user = {user.id}"
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Force user to be the current user
+                request.data['user'] = user.id
+            
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -925,9 +945,35 @@ class SaleInvoiceItemListAPIView(ListAPIView):
 
 
 class SaleInvoiceItemCreateAPIView(CreateAPIView):
-    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    permission_classes = [
+        SalesRoleAuthentication 
+        | ManagerRoleAuthentication 
+        | AreaManagerRoleAuthentication 
+        | PharmacyRoleAuthentication 
+        | StoreRoleAuthentication
+    ]
     serializer_class = SaleInvoiceItemCreateSerializer
     queryset = SaleInvoiceItem.objects.all()
+    
+    def create(self, request, *args, **kwargs):
+        # Validation: If user is PHARMACY or STORE, they can only add items to their own invoices
+        user = request.user
+        
+        if user.role in [Role.PHARMACY, Role.STORE]:
+            sale_invoice_id = request.data.get('sale_invoice')
+            if sale_invoice_id:
+                try:
+                    invoice = SaleInvoice.objects.get(id=sale_invoice_id)
+                    if invoice.user_id != user.id:
+                        return Response({
+                            "error": "لا يمكنك إضافة بنود لفواتير مستخدمين آخرين / You cannot add items to other users' invoices"
+                        }, status=status.HTTP_403_FORBIDDEN)
+                except SaleInvoice.DoesNotExist:
+                    return Response({
+                        "error": "الفاتورة غير موجودة / Invoice not found"
+                    }, status=status.HTTP_404_NOT_FOUND)
+        
+        return super().create(request, *args, **kwargs)
 
 
 class SaleInvoiceItemStateUpdateAPIView(UpdateAPIView):
@@ -964,7 +1010,13 @@ class SaleInvoiceItemStateUpdateAPIView(UpdateAPIView):
 
 
 class SaleInvoiceItemUpdateAPIView(UpdateAPIView):
-    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    permission_classes = [
+        SalesRoleAuthentication 
+        | ManagerRoleAuthentication 
+        | AreaManagerRoleAuthentication 
+        | PharmacyRoleAuthentication 
+        | StoreRoleAuthentication
+    ]
     serializer_class = SaleInvoiceItemUpdateSerializer
 
     def get_queryset(self):
@@ -983,6 +1035,9 @@ class SaleInvoiceItemUpdateAPIView(UpdateAPIView):
                 queryset = queryset.filter(invoice__user__profile__area_manager=user)
             case Role.MANAGER:
                 queryset = queryset.filter(invoice__user__profile__manager=user)
+            case Role.PHARMACY | Role.STORE:
+                # Pharmacies and stores can only update items in their own invoices
+                queryset = queryset.filter(invoice__user=user)
             case _r:
                 queryset = queryset.none()
 
@@ -1020,7 +1075,13 @@ class SaleInvoiceItemBulkStateUpdateAPIView(BulkUpdateAPIView):
 
 
 class SaleInvoiceItemDestroyAPIView(DestroyAPIView):
-    permission_classes = [SalesRoleAuthentication | ManagerRoleAuthentication | AreaManagerRoleAuthentication]
+    permission_classes = [
+        SalesRoleAuthentication 
+        | ManagerRoleAuthentication 
+        | AreaManagerRoleAuthentication 
+        | PharmacyRoleAuthentication 
+        | StoreRoleAuthentication
+    ]
     serializer_class = SaleInvoiceItemCreateSerializer
 
     def get_queryset(self):
@@ -1039,6 +1100,9 @@ class SaleInvoiceItemDestroyAPIView(DestroyAPIView):
                 queryset = queryset.filter(invoice__user__profile__area_manager=user)
             case Role.MANAGER:
                 queryset = queryset.filter(invoice__user__profile__manager=user)
+            case Role.PHARMACY | Role.STORE:
+                # Pharmacies and stores can only delete items from their own invoices
+                queryset = queryset.filter(invoice__user=user)
             case _r:
                 queryset = queryset.none()
 
