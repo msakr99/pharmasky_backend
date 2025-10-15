@@ -31,3 +31,5 @@ whitenoise
 django-health-check
 sentry-sdk
 fuzzywuzzy
+openai
+python-dotenv

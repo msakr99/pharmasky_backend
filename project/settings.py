@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "invoices",
     "inventory",
     "notifications",
+    "ai_agent",
 ]
 
 MIDDLEWARE = [
@@ -371,3 +372,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MINIMUM_PHARMACY_INVOICE_SUB_TOTAL = 600
 MAX_RETURN_PERIOD_IN_DAYS = 7
+
+# AI Agent Settings
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+DIGITALOCEAN_AGENT_URL = env('DIGITALOCEAN_AGENT_URL', default='https://rh7hum3gky53ykah274mdpkl.agents.do-ai.run')
