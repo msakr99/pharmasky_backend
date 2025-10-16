@@ -1,5 +1,17 @@
 # PharmasSky Server Deployment Script - PowerShell Version
 # Server IP: 129.212.140.152
+#
+# This script will:
+# 1. Commit and push changes to GitHub
+# 2. Connect to the server via SSH
+# 3. Pull latest changes from GitHub
+# 4. Rebuild Docker containers
+# 5. Run database migrations (including ai_agent)
+# 6. Collect static files
+# 7. Restart Celery workers
+# 8. Test API health
+#
+# Usage: .\deploy_to_server.ps1
 
 Write-Host "Starting deployment to PharmasSky server..." -ForegroundColor Cyan
 
@@ -91,18 +103,49 @@ $deployScript = @'
     
     echo ""
     echo "Running database migrations..."
+    
+    # Check for new migrations
+    echo "Checking for new migrations..."
     docker-compose exec -T web python manage.py makemigrations
+    
+    if [ $? -eq 0 ]; then
+        echo "[SUCCESS] Migration files created/checked"
+    else
+        echo "[WARNING] makemigrations had issues"
+    fi
+    
+    # Run migrations for all apps
+    echo "Applying migrations..."
     docker-compose exec -T web python manage.py migrate
     
     if [ $? -eq 0 ]; then
-        echo "[SUCCESS] Migrations completed successfully"
+        echo "[SUCCESS] All migrations applied successfully"
     else
-        echo "[WARNING] Migration failed or no migrations needed"
+        echo "[ERROR] Migration failed!"
+        exit 1
     fi
+    
+    # Show migration status
+    echo ""
+    echo "Migration status:"
+    docker-compose exec -T web python manage.py showmigrations ai_agent
+    docker-compose exec -T web python manage.py showmigrations offers
+    docker-compose exec -T web python manage.py showmigrations invoices
     
     echo ""
     echo "Collecting static files..."
     docker-compose exec -T web python manage.py collectstatic --noinput
+    
+    echo ""
+    echo "Restarting Celery workers..."
+    docker-compose restart celery
+    docker-compose restart celery_beat
+    
+    if [ $? -eq 0 ]; then
+        echo "[SUCCESS] Celery workers restarted"
+    else
+        echo "[WARNING] Celery restart had issues"
+    fi
     
     echo ""
     echo "Testing API health..."

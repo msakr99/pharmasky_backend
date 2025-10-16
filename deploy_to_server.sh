@@ -2,6 +2,18 @@
 
 # PharmasSky Server Deployment Script
 # Server IP: 129.212.140.152
+#
+# This script will:
+# 1. Commit and push changes to GitHub
+# 2. Connect to the server via SSH
+# 3. Pull latest changes from GitHub
+# 4. Rebuild Docker containers
+# 5. Run database migrations (including ai_agent)
+# 6. Collect static files
+# 7. Restart Celery workers
+# 8. Test API health
+#
+# Usage: ./deploy_to_server.sh
 
 echo "🚀 Starting deployment to PharmasSky server..."
 
@@ -89,18 +101,49 @@ ssh -i ~/.ssh/pharmasky-github-deploy root@129.212.140.152 << 'EOF'
     
     echo ""
     echo "🗄️  Running database migrations..."
+    
+    # Check for new migrations
+    echo "🔍 Checking for new migrations..."
     docker-compose exec -T web python manage.py makemigrations
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Migration files created/checked"
+    else
+        echo "⚠️  makemigrations had issues"
+    fi
+    
+    # Run migrations for all apps
+    echo "▶️  Applying migrations..."
     docker-compose exec -T web python manage.py migrate
     
     if [ $? -eq 0 ]; then
-        echo "✅ Migrations completed successfully"
+        echo "✅ All migrations applied successfully"
     else
-        echo "⚠️  Migration failed or no migrations needed"
+        echo "❌ Migration failed!"
+        exit 1
     fi
+    
+    # Show migration status
+    echo ""
+    echo "📋 Migration status:"
+    docker-compose exec -T web python manage.py showmigrations ai_agent
+    docker-compose exec -T web python manage.py showmigrations offers
+    docker-compose exec -T web python manage.py showmigrations invoices
     
     echo ""
     echo "📦 Collecting static files..."
     docker-compose exec -T web python manage.py collectstatic --noinput
+    
+    echo ""
+    echo "🔄 Restarting Celery workers..."
+    docker-compose restart celery
+    docker-compose restart celery_beat
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Celery workers restarted"
+    else
+        echo "⚠️  Celery restart had issues"
+    fi
     
     echo ""
     echo "🩺 Testing API health..."

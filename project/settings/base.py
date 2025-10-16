@@ -204,11 +204,11 @@ ROSETTA_SHOW_AT_ADMIN_PANEL = True
 # Push notifications settings
 PUSH_NOTIFICATIONS_SETTINGS = {"UPDATE_ON_DUPLICATE_REG_ID": True}
 
+# OpenAI / AI Agent configuration
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+DIGITALOCEAN_AGENT_URL = env('DIGITALOCEAN_AGENT_URL', default='https://api.openai.com/v1')
+
 # Custom application settings
 MINIMUM_PHARMACY_INVOICE_SUB_TOTAL = 600
 MAX_RETURN_PERIOD_IN_DAYS = 7
-
-# OpenAI API settings
-OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
-DIGITALOCEAN_AGENT_URL = env('DIGITALOCEAN_AGENT_URL', default='https://api.openai.com/v1')
 
