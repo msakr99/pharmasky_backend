@@ -13,7 +13,6 @@ from ai_agent.serializers import (
     CallRequestSerializer,
     CallResponseSerializer
 )
-from ai_agent.services import openai_service
 from ai_agent.models import ChatSession
 import base64
 from io import BytesIO
@@ -30,6 +29,9 @@ class ChatAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        # Lazy import to avoid loading openai at startup
+        from ai_agent.services import openai_service
+        
         # Validate request
         serializer = ChatRequestSerializer(data=request.data)
         if not serializer.is_valid():
@@ -82,6 +84,9 @@ class VoiceAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        # Lazy import
+        from ai_agent.services import openai_service
+        
         # Validate request
         serializer = VoiceRequestSerializer(data=request.data)
         if not serializer.is_valid():
@@ -139,6 +144,9 @@ class CallAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        # Lazy import
+        from ai_agent.services import openai_service
+        
         # Validate request
         serializer = CallRequestSerializer(data=request.data)
         if not serializer.is_valid():
