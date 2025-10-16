@@ -1,18 +1,14 @@
 """
 AI Agent tools/functions that connect to the Django models
 """
-from django.apps import apps
 from django.db.models import Q
 import json
 
-# Get models
-Product = apps.get_model('market', 'Product')
-SaleInvoice = apps.get_model('invoices', 'SaleInvoice')
-SaleInvoiceItem = apps.get_model('invoices', 'SaleInvoiceItem')
-Offer = apps.get_model('offers', 'Offer')
-UserProfile = apps.get_model('profiles', 'UserProfile')
-Complaint = apps.get_model('profiles', 'Complaint')
-PharmacyProductWishList = apps.get_model('market', 'PharmacyProductWishList')
+# Import models directly (avoid AppRegistryNotReady error)
+from market.models import Product, PharmacyProductWishList
+from invoices.models import SaleInvoice, SaleInvoiceItem
+from offers.models import Offer
+from profiles.models import UserProfile, Complaint
 
 
 # Define tools for OpenAI function calling
