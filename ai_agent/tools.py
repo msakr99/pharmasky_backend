@@ -9,6 +9,7 @@ import json
 Product = apps.get_model('market', 'Product')
 SaleInvoice = apps.get_model('invoices', 'SaleInvoice')
 SaleInvoiceItem = apps.get_model('invoices', 'SaleInvoiceItem')
+Offer = apps.get_model('offers', 'Offer')
 
 
 # Define tools for OpenAI function calling
@@ -17,13 +18,13 @@ AGENT_TOOLS = [
         "type": "function",
         "function": {
             "name": "check_availability",
-            "description": "التحقق من توفر دواء أو منتج في المخزون. يبحث بالاسم العربي أو الإنجليزي.",
+            "description": "التحقق من توفر دواء أو منتج في عروض ماكس. يبحث بالاسم العربي أو الإنجليزي ويعرض السعر الأصلي وسعر العرض والخصم والكمية المتاحة.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "medicine_name": {
                         "type": "string",
-                        "description": "اسم الدواء أو المنتج المطلوب البحث عنه"
+                        "description": "اسم الدواء أو المنتج المطلوب البحث عنه في عروض ماكس"
                     }
                 },
                 "required": ["medicine_name"]
@@ -51,13 +52,13 @@ AGENT_TOOLS = [
         "type": "function",
         "function": {
             "name": "create_order",
-            "description": "إنشاء طلب شراء جديد لدواء أو منتج. يجب التأكد من توفر المنتج أولاً.",
+            "description": "إنشاء طلب شراء جديد من عروض ماكس. يجب التأكد من توفر المنتج في العروض أولاً. يتم خصم الكمية تلقائياً من المتاح ويعرض المبلغ الموفَّر.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "medicine_name": {
                         "type": "string",
-                        "description": "اسم الدواء أو المنتج"
+                        "description": "اسم الدواء أو المنتج من عروض ماكس"
                     },
                     "quantity": {
                         "type": "integer",
@@ -109,45 +110,53 @@ AGENT_TOOLS = [
 # Tool implementation functions
 def check_availability(medicine_name: str) -> dict:
     """
-    Check if a medicine/product is available in the database
+    Check if a medicine/product is available in Max offers
     """
     try:
-        # Search in both Arabic and English names
-        products = Product.objects.filter(
-            Q(name__icontains=medicine_name) | 
-            Q(e_name__icontains=medicine_name)
-        )[:5]  # Limit to 5 results
+        # Search in Max offers (is_max=True) with remaining amount > 0
+        offers = Offer.objects.filter(
+            Q(product__name__icontains=medicine_name) | 
+            Q(product__e_name__icontains=medicine_name),
+            is_max=True,
+            remaining_amount__gt=0
+        ).select_related('product', 'product__company', 'product_code')[:5]
         
-        if not products.exists():
+        if not offers.exists():
             return {
                 "available": False,
-                "message": f"للأسف '{medicine_name}' مش موجود في المخزون حاليًا",
-                "products": []
+                "message": f"للأسف '{medicine_name}' مش موجود في عروض ماكس حاليًا",
+                "offers": []
             }
         
-        products_data = []
-        for product in products:
-            products_data.append({
-                "id": product.id,
-                "name": product.name,
-                "english_name": product.e_name,
-                "price": float(product.public_price),
-                "company": product.company.name if product.company else "",
-                "shape": product.shape,
-                "effective_material": product.effective_material
+        offers_data = []
+        for offer in offers:
+            offers_data.append({
+                "id": offer.id,
+                "product_id": offer.product.id,
+                "name": offer.product.name,
+                "english_name": offer.product.e_name,
+                "original_price": float(offer.product.public_price),
+                "offer_price": float(offer.selling_price),
+                "discount_percentage": float(offer.selling_discount_percentage),
+                "remaining_amount": offer.remaining_amount,
+                "company": offer.product.company.name if offer.product.company else "",
+                "shape": offer.product.shape,
+                "effective_material": offer.product.effective_material,
+                "product_code": str(offer.product_code) if offer.product_code else "",
+                "expiry_date": offer.product_expiry_date.strftime("%Y-%m-%d") if offer.product_expiry_date else None
             })
         
         return {
             "available": True,
-            "message": f"تم العثور على {len(products_data)} منتج",
-            "products": products_data
+            "message": f"تم العثور على {len(offers_data)} عرض من ماكس",
+            "offers": offers_data
         }
     
     except Exception as e:
         return {
             "available": False,
             "message": f"حدث خطأ أثناء البحث: {str(e)}",
-            "products": []
+            "offers": []
         }
 
 
@@ -207,25 +216,35 @@ def suggest_alternative(medicine_name: str) -> dict:
 
 def create_order(medicine_name: str, quantity: int, user) -> dict:
     """
-    Create a sale order for a medicine
+    Create a sale order for a medicine from Max offers
     Note: This is a simplified version. In production, you'd need more details.
     """
     try:
-        # Find the product
-        product = Product.objects.filter(
-            Q(name__icontains=medicine_name) | 
-            Q(e_name__icontains=medicine_name)
-        ).first()
+        # Find the offer
+        offer = Offer.objects.filter(
+            Q(product__name__icontains=medicine_name) | 
+            Q(product__e_name__icontains=medicine_name),
+            is_max=True,
+            remaining_amount__gt=0
+        ).select_related('product').first()
         
-        if not product:
+        if not offer:
             return {
                 "success": False,
-                "message": f"لم نجد '{medicine_name}' لإنشاء الطلب",
+                "message": f"لم نجد '{medicine_name}' في عروض ماكس لإنشاء الطلب",
+                "order_id": None
+            }
+        
+        # Check if requested quantity is available
+        if quantity > offer.remaining_amount:
+            return {
+                "success": False,
+                "message": f"الكمية المتاحة فقط {offer.remaining_amount} من {offer.product.name}",
                 "order_id": None
             }
         
         # Calculate total
-        total_price = product.public_price * quantity
+        total_price = offer.selling_price * quantity
         
         # Create sale invoice (simplified - in production you'd use the proper serializer)
         invoice = SaleInvoice.objects.create(
@@ -239,20 +258,29 @@ def create_order(medicine_name: str, quantity: int, user) -> dict:
         # Create invoice item
         SaleInvoiceItem.objects.create(
             invoice=invoice,
-            product=product,
+            product=offer.product,
             quantity=quantity,
-            unit_price=product.public_price,
+            unit_price=offer.selling_price,
             total_price=total_price,
             status='PLACED'
         )
         
+        # Update remaining amount in offer
+        offer.remaining_amount -= quantity
+        offer.save()
+        
+        discount_saved = (offer.product.public_price - offer.selling_price) * quantity
+        
         return {
             "success": True,
-            "message": f"تم إنشاء الطلب بنجاح! رقم الطلب: {invoice.id}",
+            "message": f"تم إنشاء الطلب بنجاح من عروض ماكس! رقم الطلب: {invoice.id}",
             "order_id": invoice.id,
-            "product": product.name,
+            "product": offer.product.name,
             "quantity": quantity,
-            "total_price": float(total_price)
+            "unit_price": float(offer.selling_price),
+            "total_price": float(total_price),
+            "discount_percentage": float(offer.selling_discount_percentage),
+            "amount_saved": float(discount_saved)
         }
     
     except Exception as e:
