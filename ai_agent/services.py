@@ -137,14 +137,19 @@ class OpenAIService:
         })
         
         # Call OpenAI API with tools
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            tools=AGENT_TOOLS,
-            tool_choice="auto"
-        )
-        
-        response_message = response.choices[0].message
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                tools=AGENT_TOOLS,
+                tool_choice="auto"
+            )
+            
+            response_message = response.choices[0].message
+        except Exception as e:
+            from ai_agent.error_handler import handle_openai_error
+            error_info = handle_openai_error(e)
+            raise Exception(error_info['message'])
         
         # Handle function calls if any
         if response_message.tool_calls:

@@ -14,6 +14,7 @@ from ai_agent.serializers import (
     CallResponseSerializer
 )
 from ai_agent.models import ChatSession
+from ai_agent.throttling import AIAgentUserThrottle
 import base64
 from io import BytesIO
 
@@ -27,6 +28,7 @@ class ChatAPIView(APIView):
     Response: {"message": "AI response", "session_id": 123}
     """
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AIAgentUserThrottle]  # Add rate limiting
     
     def post(self, request):
         # Lazy import to avoid loading openai at startup

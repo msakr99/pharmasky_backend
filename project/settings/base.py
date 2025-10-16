@@ -169,6 +169,12 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "ORDERING_PARAM": "o",
     "EXCEPTION_HANDLER": "core.exception_handlers.exception_handler",
+    # Rate Limiting for AI Agent
+    "DEFAULT_THROTTLE_RATES": {
+        "ai_agent_user": "10/minute",  # 10 requests per minute for authenticated users
+        "ai_agent_anon": "5/minute",   # 5 requests per minute for anonymous
+        "ai_agent_burst": "3/minute",  # Burst protection
+    },
 }
 
 # API Documentation
