@@ -10,6 +10,9 @@ Product = apps.get_model('market', 'Product')
 SaleInvoice = apps.get_model('invoices', 'SaleInvoice')
 SaleInvoiceItem = apps.get_model('invoices', 'SaleInvoiceItem')
 Offer = apps.get_model('offers', 'Offer')
+UserProfile = apps.get_model('profiles', 'UserProfile')
+Complaint = apps.get_model('profiles', 'Complaint')
+PharmacyProductWishList = apps.get_model('market', 'PharmacyProductWishList')
 
 
 # Define tools for OpenAI function calling
@@ -18,13 +21,13 @@ AGENT_TOOLS = [
         "type": "function",
         "function": {
             "name": "check_availability",
-            "description": "التحقق من توفر دواء أو منتج في عروض ماكس. يبحث بالاسم العربي أو الإنجليزي ويعرض السعر الأصلي وسعر العرض والخصم والكمية المتاحة.",
+            "description": "التحقق من توفر دواء أو منتج بأفضل عرض (أحسن خصم). يبحث بالاسم العربي أو الإنجليزي ويعرض السعر الأصلي ونسبة الخصم. المنصة تجمع عروض من مخازن متعددة وتعرض أفضل سعر.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "medicine_name": {
                         "type": "string",
-                        "description": "اسم الدواء أو المنتج المطلوب البحث عنه في عروض ماكس"
+                        "description": "اسم الدواء أو المنتج المطلوب البحث عنه في العروض المتاحة"
                     }
                 },
                 "required": ["medicine_name"]
@@ -52,13 +55,13 @@ AGENT_TOOLS = [
         "type": "function",
         "function": {
             "name": "create_order",
-            "description": "إنشاء طلب شراء جديد من عروض ماكس. يجب التأكد من توفر المنتج في العروض أولاً. يتم خصم الكمية تلقائياً من المتاح ويعرض المبلغ الموفَّر.",
+            "description": "إنشاء طلب شراء جديد بأفضل عرض متاح. يجب التأكد من توفر المنتج في العروض أولاً. يتم خصم الكمية تلقائياً من المتاح ويعرض المبلغ الموفَّر.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "medicine_name": {
                         "type": "string",
-                        "description": "اسم الدواء أو المنتج من عروض ماكس"
+                        "description": "اسم الدواء أو المنتج من العروض المتاحة"
                     },
                     "quantity": {
                         "type": "integer",
@@ -103,14 +106,78 @@ AGENT_TOOLS = [
                 "required": ["order_id"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "submit_complaint",
+            "description": "تقديم شكوى أو ملاحظة من العميل. استخدمها عندما يكون العميل غير راضي أو لديه مشكلة أو ملاحظة على الخدمة أو المنتجات أو التوصيل.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "عنوان الشكوى (مثال: مشكلة في التوصيل، منتج تالف، تأخير في الطلب)"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "تفاصيل الشكوى الكاملة"
+                    }
+                },
+                "required": ["subject", "body"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_wishlist",
+            "description": "الحصول على قائمة المنتجات المفضلة للعميل (المنتجات اللي العميل مهتم بيها). استخدمها عشان تعرف إيه المنتجات اللي العميل بيدور عليها أو مهتم بيها وتقترح عليه العروض الخاصة عليها.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_to_wishlist",
+            "description": "إضافة منتج لقائمة المفضلة للعميل. استخدمها لما العميل يسأل عن منتج مش موجود في العروض حالياً، عشان نخليه يتابعه ونبلغه لما يكون متوفر بعرض حلو.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_name": {
+                        "type": "string",
+                        "description": "اسم المنتج اللي العميل عايزه"
+                    }
+                },
+                "required": ["product_name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_order_total",
+            "description": "حساب إجمالي الطلبات اللي العميل عملها اليوم. استخدمها لما العميل يسأل 'وصلنا لكام؟' أو 'الفاتورة كام؟' - يعرض مجموع كل الأصناف والسعر الإجمالي.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
     }
 ]
 
 
 # Tool implementation functions
-def check_availability(medicine_name: str) -> dict:
+def check_availability(medicine_name: str, user=None) -> dict:
     """
     Check if a medicine/product is available in Max offers
+    Returns: availability status, original price, and discount percentage
+    Discount percentage = selling_discount_percentage - user.profile.payment_period.addition_percentage
     """
     try:
         # Search in Max offers (is_max=True) with remaining amount > 0
@@ -119,36 +186,41 @@ def check_availability(medicine_name: str) -> dict:
             Q(product__e_name__icontains=medicine_name),
             is_max=True,
             remaining_amount__gt=0
-        ).select_related('product', 'product__company', 'product_code')[:5]
+        ).select_related('product')[:5]
         
         if not offers.exists():
             return {
                 "available": False,
-                "message": f"للأسف '{medicine_name}' مش موجود في عروض ماكس حاليًا",
+                "message": f"للأسف '{medicine_name}' مش متوفر في العروض حالياً",
                 "offers": []
             }
         
+        # Get user's payment period addition percentage
+        addition_percentage = 0
+        if user and hasattr(user, 'profile'):
+            try:
+                profile = user.profile
+                if profile and hasattr(profile, 'payment_period') and profile.payment_period:
+                    addition_percentage = float(profile.payment_period.addition_percentage or 0)
+            except Exception:
+                # If user has no profile, use default 0
+                addition_percentage = 0
+        
         offers_data = []
         for offer in offers:
+            # Calculate actual discount: selling_discount_percentage - addition_percentage
+            actual_discount = float(offer.selling_discount_percentage) - addition_percentage
+            
             offers_data.append({
-                "id": offer.id,
-                "product_id": offer.product.id,
                 "name": offer.product.name,
-                "english_name": offer.product.e_name,
+                "available": True,
                 "original_price": float(offer.product.public_price),
-                "offer_price": float(offer.selling_price),
-                "discount_percentage": float(offer.selling_discount_percentage),
-                "remaining_amount": offer.remaining_amount,
-                "company": offer.product.company.name if offer.product.company else "",
-                "shape": offer.product.shape,
-                "effective_material": offer.product.effective_material,
-                "product_code": str(offer.product_code) if offer.product_code else "",
-                "expiry_date": offer.product_expiry_date.strftime("%Y-%m-%d") if offer.product_expiry_date else None
+                "discount_percentage": round(actual_discount, 2)
             })
         
         return {
             "available": True,
-            "message": f"تم العثور على {len(offers_data)} عرض من ماكس",
+            "message": f"تم العثور على {len(offers_data)} عرض متاح بأفضل الأسعار",
             "offers": offers_data
         }
     
@@ -216,11 +288,11 @@ def suggest_alternative(medicine_name: str) -> dict:
 
 def create_order(medicine_name: str, quantity: int, user) -> dict:
     """
-    Create a sale order for a medicine from Max offers
-    Note: This is a simplified version. In production, you'd need more details.
+    Create a sale order for a medicine with best available offer
+    Note: is_max=True indicates best offer from multiple warehouses
     """
     try:
-        # Find the offer
+        # Find the best offer (is_max=True)
         offer = Offer.objects.filter(
             Q(product__name__icontains=medicine_name) | 
             Q(product__e_name__icontains=medicine_name),
@@ -231,7 +303,7 @@ def create_order(medicine_name: str, quantity: int, user) -> dict:
         if not offer:
             return {
                 "success": False,
-                "message": f"لم نجد '{medicine_name}' في عروض ماكس لإنشاء الطلب",
+                "message": f"لم نجد '{medicine_name}' في العروض المتاحة لإنشاء الطلب",
                 "order_id": None
             }
         
@@ -273,7 +345,7 @@ def create_order(medicine_name: str, quantity: int, user) -> dict:
         
         return {
             "success": True,
-            "message": f"تم إنشاء الطلب بنجاح من عروض ماكس! رقم الطلب: {invoice.id}",
+            "message": f"تم إنشاء الطلب بنجاح بأفضل سعر متاح! رقم الطلب: {invoice.id}",
             "order_id": invoice.id,
             "product": offer.product.name,
             "quantity": quantity,
@@ -375,6 +447,271 @@ def cancel_order(order_id: int, user) -> dict:
         }
 
 
+def submit_complaint(subject: str, body: str, user) -> dict:
+    """
+    Submit a complaint from the user
+    """
+    try:
+        if not user:
+            return {
+                "success": False,
+                "message": "المستخدم غير موجود"
+            }
+        
+        # Validate input
+        if not subject or not subject.strip():
+            return {
+                "success": False,
+                "message": "من فضلك اكتب عنوان للشكوى"
+            }
+        
+        if not body or not body.strip():
+            return {
+                "success": False,
+                "message": "من فضلك اكتب تفاصيل الشكوى"
+            }
+        
+        # Create complaint
+        complaint = Complaint.objects.create(
+            user=user,
+            subject=subject.strip()[:255],  # Limit to 255 chars
+            body=body.strip()[:400]  # Limit to 400 chars as per model
+        )
+        
+        return {
+            "success": True,
+            "message": "تم تسجيل شكواك بنجاح! هنتابع الموضوع ونتواصل معاك في أقرب وقت. شكراً لتواصلك معانا.",
+            "complaint_id": complaint.id,
+            "subject": complaint.subject,
+            "created_at": complaint.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"حدث خطأ أثناء تسجيل الشكوى: {str(e)}"
+        }
+
+
+def get_wishlist(user) -> dict:
+    """
+    Get user's wishlist products (products the user is interested in)
+    """
+    try:
+        if not user:
+            return {
+                "success": False,
+                "message": "المستخدم غير موجود",
+                "wishlist": []
+            }
+        
+        # Get wishlist items for the user
+        wishlist_items = PharmacyProductWishList.objects.filter(
+            pharmacy=user
+        ).select_related('product', 'product__company')[:20]  # Limit to 20 items
+        
+        if not wishlist_items.exists():
+            return {
+                "success": True,
+                "message": "مفيش منتجات في قائمة المفضلة حالياً",
+                "wishlist": [],
+                "count": 0
+            }
+        
+        # Build wishlist data
+        wishlist_data = []
+        for item in wishlist_items:
+            product = item.product
+            
+            # Check if product is available with best offer (is_max=True)
+            in_max_offer = Offer.objects.filter(
+                product=product,
+                is_max=True,  # Best offer from multiple warehouses
+                remaining_amount__gt=0
+            ).exists()
+            
+            wishlist_data.append({
+                "product_id": product.id,
+                "name": product.name,
+                "english_name": product.e_name,
+                "price": float(product.public_price),
+                "company": product.company.name if product.company else "",
+                "effective_material": product.effective_material,
+                "shape": product.shape,
+                "in_max_offer": in_max_offer,
+                "added_at": item.created_at.strftime("%Y-%m-%d")
+            })
+        
+        return {
+            "success": True,
+            "message": f"لقيت {len(wishlist_data)} منتج في قائمة المفضلة",
+            "wishlist": wishlist_data,
+            "count": len(wishlist_data)
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"حدث خطأ: {str(e)}",
+            "wishlist": []
+        }
+
+
+def add_to_wishlist(product_name: str, user) -> dict:
+    """
+    Add a product to user's wishlist
+    Use when customer asks about a product that is not available in Max offers
+    """
+    try:
+        if not user:
+            return {
+                "success": False,
+                "message": "المستخدم غير موجود"
+            }
+        
+        if not product_name or not product_name.strip():
+            return {
+                "success": False,
+                "message": "من فضلك اكتب اسم المنتج"
+            }
+        
+        # Search for the product
+        product = Product.objects.filter(
+            Q(name__icontains=product_name) | 
+            Q(e_name__icontains=product_name)
+        ).first()
+        
+        if not product:
+            return {
+                "success": False,
+                "message": f"للأسف مش لاقي المنتج '{product_name}' في قاعدة البيانات",
+                "suggestion": "ممكن تتأكد من اسم المنتج أو تكتبه بطريقة تانية؟"
+            }
+        
+        # Check if already in wishlist
+        already_exists = PharmacyProductWishList.objects.filter(
+            pharmacy=user,
+            product=product
+        ).exists()
+        
+        if already_exists:
+            return {
+                "success": True,
+                "message": f"المنتج '{product.name}' موجود أصلاً في قائمتك المفضلة!",
+                "product": {
+                    "name": product.name,
+                    "price": float(product.public_price),
+                    "company": product.company.name if product.company else ""
+                },
+                "already_added": True
+            }
+        
+        # Add to wishlist
+        PharmacyProductWishList.objects.create(
+            pharmacy=user,
+            product=product
+        )
+        
+        return {
+            "success": True,
+            "message": f"تمام! ضفت '{product.name}' لقائمتك المفضلة. هبلغك لما يكون متوفر بعرض حلو! 🔔",
+            "product": {
+                "id": product.id,
+                "name": product.name,
+                "english_name": product.e_name,
+                "price": float(product.public_price),
+                "company": product.company.name if product.company else "",
+                "effective_material": product.effective_material
+            },
+            "already_added": False
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"حدث خطأ أثناء إضافة المنتج: {str(e)}"
+        }
+
+
+def get_order_total(user) -> dict:
+    """
+    Calculate total of today's orders (when customer asks "وصلنا لكام؟")
+    Shows all items ordered today and the grand total
+    """
+    try:
+        if not user:
+            return {
+                "success": False,
+                "message": "المستخدم غير موجود"
+            }
+        
+        # Get today's orders
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get orders from last 24 hours
+        time_threshold = timezone.now() - timedelta(hours=24)
+        
+        invoices = SaleInvoice.objects.filter(
+            user=user,
+            created_at__gte=time_threshold,
+            status__in=['PLACED', 'CONFIRMED']  # فقط الطلبات النشطة
+        ).prefetch_related('items', 'items__product')
+        
+        if not invoices.exists():
+            return {
+                "success": True,
+                "message": "مفيش طلبات جديدة اليوم",
+                "total": 0,
+                "items_count": 0,
+                "orders": []
+            }
+        
+        # Calculate totals
+        grand_total = 0
+        total_items = 0
+        orders_summary = []
+        all_items = []
+        
+        for invoice in invoices:
+            grand_total += float(invoice.total_price)
+            total_items += invoice.items_count
+            
+            # Get items details
+            items_list = []
+            for item in invoice.items.all():
+                items_list.append({
+                    "product": item.product.name,
+                    "quantity": item.quantity,
+                    "unit_price": float(item.unit_price),
+                    "total": float(item.total_price)
+                })
+                all_items.append(f"{item.product.name} × {item.quantity}")
+            
+            orders_summary.append({
+                "order_id": invoice.id,
+                "items": items_list,
+                "total": float(invoice.total_price),
+                "status": invoice.status
+            })
+        
+        return {
+            "success": True,
+            "message": f"إجمالي طلباتك اليوم: {grand_total} جنيه",
+            "grand_total": grand_total,
+            "total_items": total_items,
+            "orders_count": len(orders_summary),
+            "orders": orders_summary,
+            "summary": all_items  # قائمة مبسطة بكل الأصناف
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"حدث خطأ: {str(e)}"
+        }
+
+
 # Function router
 def execute_tool(function_name: str, arguments: dict, user=None) -> str:
     """
@@ -382,19 +719,32 @@ def execute_tool(function_name: str, arguments: dict, user=None) -> str:
     """
     try:
         if function_name == "check_availability":
-            result = check_availability(arguments.get("medicine_name"))
+            medicine_name = arguments.get("medicine_name", "")
+            result = check_availability(medicine_name, user)
         elif function_name == "suggest_alternative":
-            result = suggest_alternative(arguments.get("medicine_name"))
+            medicine_name = arguments.get("medicine_name", "")
+            result = suggest_alternative(medicine_name)
         elif function_name == "create_order":
-            result = create_order(
-                arguments.get("medicine_name"),
-                arguments.get("quantity"),
-                user
-            )
+            medicine_name = arguments.get("medicine_name", "")
+            quantity = arguments.get("quantity", 0)
+            result = create_order(medicine_name, quantity, user)
         elif function_name == "track_order":
-            result = track_order(arguments.get("order_id"), user)
+            order_id = arguments.get("order_id", 0)
+            result = track_order(order_id, user)
         elif function_name == "cancel_order":
-            result = cancel_order(arguments.get("order_id"), user)
+            order_id = arguments.get("order_id", 0)
+            result = cancel_order(order_id, user)
+        elif function_name == "submit_complaint":
+            subject = arguments.get("subject", "")
+            body = arguments.get("body", "")
+            result = submit_complaint(subject, body, user)
+        elif function_name == "get_wishlist":
+            result = get_wishlist(user)
+        elif function_name == "add_to_wishlist":
+            product_name = arguments.get("product_name", "")
+            result = add_to_wishlist(product_name, user)
+        elif function_name == "get_order_total":
+            result = get_order_total(user)
         else:
             result = {"error": f"Unknown function: {function_name}"}
         

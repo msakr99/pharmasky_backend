@@ -42,7 +42,7 @@ LOGIN_REDIRECT_URL = "/"
 SECRET_KEY = env('SECRET_KEY', default='django-insecure--pv1n!%sr_ny^-5oqu72ije32z%1cl$qq#24pw&2as#h6o6!mh')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG', default=True)
+DEBUG = env('DEBUG', default=False)  # Changed default to False for security
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
 
@@ -129,11 +129,11 @@ AUTH_USER_MODEL = "accounts.User"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'defaultdb',
-        'USER': 'doadmin',
-        'PASSWORD': 'AVNS_g62jyoo4mcu0BkfRsdM',
-        'HOST': 'pharmasky-db-do-user-17921548-0.h.db.ondigitalocean.com',
-        'PORT': '25060',
+        'NAME': env('DB_NAME', default='defaultdb'),
+        'USER': env('DB_USER', default='doadmin'),
+        'PASSWORD': env('DB_PASSWORD'),  # SECURITY: Must be set in .env file
+        'HOST': env('DB_HOST', default='pharmasky-db-do-user-17921548-0.h.db.ondigitalocean.com'),
+        'PORT': env('DB_PORT', default='25060'),
         'OPTIONS': {
             'sslmode': 'require',
         },

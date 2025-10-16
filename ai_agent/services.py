@@ -38,14 +38,68 @@ class OpenAIService:
         
         return session
     
+    def get_user_context(self, user):
+        """
+        Get user profile context for personalized conversation
+        Returns dictionary with user information
+        """
+        context = {}
+        
+        try:
+            # Get user profile
+            if hasattr(user, 'profile'):
+                profile = user.profile
+                
+                context['pharmacy_name'] = user.name
+                context['responsible_person'] = profile.key_person if profile.key_person else None
+                context['responsible_person_phone'] = profile.key_person_phone if profile.key_person_phone else None
+                context['address'] = profile.address if profile.address else None
+                
+                # Latest invoice date
+                if profile.latest_invoice_date:
+                    context['latest_invoice_date'] = profile.latest_invoice_date.strftime("%Y-%m-%d")
+                
+                # City info
+                if profile.city:
+                    context['city_info'] = {
+                        'city': profile.city.name,
+                        'country': profile.city.country.name if profile.city.country else None
+                    }
+                
+                # Payment period (without sensitive pricing info)
+                if profile.payment_period:
+                    context['payment_period'] = {
+                        'name': profile.payment_period.name,
+                        'period_in_days': profile.payment_period.period_in_days if hasattr(profile.payment_period, 'period_in_days') else None
+                        # Note: addition_percentage and profit_percentage are excluded for security
+                    }
+            
+            # Get account information
+            if hasattr(user, 'account'):
+                account = user.account
+                context['account'] = {
+                    'balance': float(account.balance),
+                    'credit_limit': float(account.credit_limit),
+                    'remaining_credit': float(account.remaining_credit)
+                }
+        
+        except Exception as e:
+            # If any error occurs, return empty context
+            pass
+        
+        return context
+    
     def get_conversation_history(self, session, limit=10):
         """Get recent conversation history for context"""
         messages = []
         
-        # Add system prompt
+        # Get user context for personalized prompt
+        user_context = self.get_user_context(session.user)
+        
+        # Add system prompt with user context
         messages.append({
             "role": "system",
-            "content": get_system_prompt()
+            "content": get_system_prompt(user_context)
         })
         
         # Add recent chat history
