@@ -6,6 +6,7 @@ from django.conf import settings
 from ai_agent.prompts import get_system_prompt
 from ai_agent.tools import AGENT_TOOLS, execute_tool
 from ai_agent.models import ChatSession, ChatMessage
+from ai_agent.error_handler import handle_openai_error
 import json
 import base64
 from io import BytesIO
@@ -147,7 +148,6 @@ class OpenAIService:
             
             response_message = response.choices[0].message
         except Exception as e:
-            from ai_agent.error_handler import handle_openai_error
             error_info = handle_openai_error(e)
             raise Exception(error_info['message'])
         
