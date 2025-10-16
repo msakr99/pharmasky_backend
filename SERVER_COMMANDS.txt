@@ -1,0 +1,87 @@
+# نفذ هذه الأوامر على السيرفر (pharmasky-server)
+# انسخ والصق في terminal
+
+# =========================================
+# الطريقة 1: حل سريع (بدون git pull)
+# =========================================
+
+cd /opt/pharmasky
+
+# إنشاء سكربت الإصلاح مباشرة
+cat > deploy_docker_fix.sh << 'SCRIPT_END'
+#!/bin/bash
+
+# PharmaSky Docker Fix Deployment Script
+set -e
+
+echo "🚀 Starting PharmaSky Docker Fix Deployment..."
+echo "================================================"
+
+# Stop running containers
+echo "Step 1: Stopping running containers..."
+docker-compose down || true
+
+# Remove old images
+echo "Step 2: Removing old Docker images..."
+docker rmi pharmasky_web pharmasky_celery pharmasky_celery_beat 2>/dev/null || true
+
+# Clean Docker system
+echo "Step 3: Cleaning Docker system..."
+docker system prune -f
+
+# Rebuild images with no cache
+echo "Step 4: Rebuilding Docker images (this may take a few minutes)..."
+docker-compose build --no-cache
+
+# Start containers
+echo "Step 5: Starting containers..."
+docker-compose up -d
+
+# Wait for services
+echo "Step 6: Waiting for services to start..."
+sleep 10
+
+# Check status
+echo "Step 7: Checking container status..."
+docker-compose ps
+
+# Test OpenAI
+echo "Step 8: Testing OpenAI module..."
+if docker exec pharmasky_web python -c "from openai import OpenAI; print('✅ OpenAI loaded successfully!')" 2>/dev/null; then
+    echo "✅ OpenAI module is working!"
+else
+    echo "Installing OpenAI manually..."
+    docker exec pharmasky_web pip install openai>=1.0.0
+fi
+
+# Show logs
+echo "Step 9: Showing recent logs..."
+docker-compose logs web --tail=30
+
+echo ""
+echo "================================================"
+echo "✅ Deployment completed!"
+echo "================================================"
+SCRIPT_END
+
+# إعطاء صلاحيات التنفيذ
+chmod +x deploy_docker_fix.sh
+
+# تشغيل السكربت
+./deploy_docker_fix.sh
+
+# =========================================
+# أو الطريقة 2: حل يدوي سريع
+# =========================================
+# إذا لم يعمل السكربت، نفذ هذه الأوامر واحدة تلو الأخرى:
+
+docker-compose down
+docker rmi pharmasky_web pharmasky_celery pharmasky_celery_beat 2>/dev/null || true
+docker system prune -f
+docker-compose build --no-cache
+docker-compose up -d
+sleep 10
+docker-compose ps
+docker-compose logs web --tail=50
+docker exec pharmasky_web python -c "from openai import OpenAI; print('✅ OK')"
+
