@@ -1355,7 +1355,7 @@ class MyAccountStatementAPIView(GenericAPIView):
         limit = request.query_params.get('limit', None)
         
         # Get all transactions for this account
-        queryset = AccountTransaction.objects.filter(account=account)
+        queryset = AccountTransaction.objects.filter(account=account).select_related('content_type')
         
         # Apply type filter
         if type_filter:
@@ -1409,8 +1409,8 @@ class MyAccountStatementAPIView(GenericAPIView):
                 'amount': txn.amount,
                 'balance_after': running_balance,
                 'remarks': getattr(txn.related_object, 'remarks', '') if txn.related_object else '',
-                'related_object_type': txn.related_object_type.model if txn.related_object_type else None,
-                'related_object_id': txn.related_object_id,
+                'related_object_type': txn.content_type.model if txn.content_type else None,
+                'related_object_id': txn.object_id,
             })
         
         # Reverse to show newest first
