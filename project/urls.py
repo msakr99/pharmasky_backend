@@ -27,7 +27,8 @@ def home_view(request):
             "shop": "/shop/",
             "inventory": "/inventory/",
             "ai_agent": "/ai-agent/",
-            "notifications": "/notifications/"
+            "notifications": "/notifications/",
+            "core": "/core/"
         }
     })
 
@@ -46,6 +47,7 @@ urlpatterns = [
     path("profiles/", include("profiles.urls")),
     path("ai-agent/", include("ai_agent.urls")),
     path("notifications/", include("notifications.urls")),
+    path("core/", include("core.urls")),
     # Push notifications URLs temporarily disabled
     # path(
     #     "push-notifications/devices/fcm/register/",

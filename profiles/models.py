@@ -39,6 +39,10 @@ class PaymentPeriod(models.Model):
     name = models.CharField(max_length=255)
     period_in_days = models.PositiveIntegerField()
     addition_percentage = models.DecimalField(max_digits=4, decimal_places=2, blank=True)
+    reminder_days_before = models.PositiveIntegerField(
+        default=3,
+        help_text="عدد الأيام قبل موعد التحصيل لإرسال تذكير (افتراضي: 3 أيام)"
+    )
 
 
 class UserProfile(models.Model):

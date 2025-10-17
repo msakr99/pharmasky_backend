@@ -32,7 +32,7 @@ class CityReadSerializer(BaseModelSerializer):
 class PaymentPeriodReadSerializer(BaseModelSerializer):
     class Meta:
         model = PaymentPeriod
-        fields = ["id", "name", "period_in_days", "addition_percentage"]
+        fields = ["id", "name", "period_in_days", "addition_percentage", "reminder_days_before"]
 
 
 class UserProfileReadSerializer(BaseModelSerializer):

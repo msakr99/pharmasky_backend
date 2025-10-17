@@ -25,9 +25,9 @@ class CityModelAdmin(DefaultBaseAdminItems):
 
 @admin.register(PaymentPeriod)
 class PaymentPeriodModelAdmin(DefaultBaseAdminItems):
-    list_display = ["name", "period_in_days", "addition_percentage"]
+    list_display = ["name", "period_in_days", "addition_percentage", "reminder_days_before"]
     search_fields = ["name"]
-    list_filter = ["period_in_days", "addition_percentage"]
+    list_filter = ["period_in_days", "addition_percentage", "reminder_days_before"]
 
 
 @admin.register(UserProfile)
