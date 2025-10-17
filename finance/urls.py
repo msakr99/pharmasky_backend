@@ -114,4 +114,14 @@ urlpatterns = [
         views.MyAccountSummaryAPIView.as_view(),
         name="my-account-summary-view",
     ),
+    path(
+        "my-collection-schedule/",
+        views.MyCollectionScheduleAPIView.as_view(),
+        name="my-collection-schedule-view",
+    ),
+    path(
+        "my-account-statement/",
+        views.MyAccountStatementAPIView.as_view(),
+        name="my-account-statement-view",
+    ),
 ]

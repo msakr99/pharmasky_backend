@@ -1199,3 +1199,244 @@ class MyAccountSummaryAPIView(GenericAPIView):
         }
         
         return Response(summary)
+
+
+class MyCollectionScheduleAPIView(GenericAPIView):
+    """
+    جدول التحصيلات الخاص بالمستخدم الحالي
+    My Collection Schedule - Expected payment dates for the logged-in user
+    
+    This endpoint allows authenticated users (especially pharmacies)
+    to view their own payment schedule and outstanding amounts.
+    
+    Returns:
+    - Payment period details (تفاصيل فترة السداد)
+    - Expected payment date (تاريخ السداد المتوقع)
+    - Days until/overdue payment (الأيام المتبقية/المتأخرة)
+    - Outstanding balance (الرصيد المستحق)
+    - Penalty for late payment (غرامة التأخير)
+    - Cashback for early payment (خصم الدفع المبكر)
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = CollectionScheduleSerializer
+    
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        current_date = timezone.now()
+        
+        # Get user's account
+        try:
+            account = user.account
+        except:
+            return Response({
+                'error': 'لا يوجد حساب مالي لهذا المستخدم / No financial account found for this user'
+            }, status=404)
+        
+        # Check if user has outstanding balance (debt)
+        if account.balance >= 0:
+            return Response({
+                'message': 'لا توجد مديونية حالياً / No outstanding balance',
+                'balance': float(account.balance),
+                'collection_schedule': None
+            })
+        
+        outstanding_balance = abs(account.balance)  # Convert negative to positive
+        
+        # Get user profile and payment period info
+        try:
+            profile = user.profile
+        except:
+            return Response({
+                'error': 'لا يوجد ملف تعريفي لهذا المستخدم / No profile found for this user'
+            }, status=404)
+        
+        # Calculate expected collection date
+        expected_date = None
+        days_until = None
+        is_overdue = False
+        payment_period_name = None
+        period_days = None
+        
+        if profile.payment_period and profile.latest_invoice_date:
+            payment_period_name = profile.payment_period.name
+            period_days = profile.payment_period.period_in_days
+            expected_date = profile.latest_invoice_date + timedelta(days=period_days)
+            days_until = (expected_date - current_date).days
+            is_overdue = days_until < 0
+        
+        # Calculate penalty and cashback
+        penalty_percentage = profile.late_payment_penalty_percentage or Decimal('0.20')
+        cashback_percentage = profile.early_payment_cashback_percentage or Decimal('0.10')
+        penalty_amount = Decimal('0.00')
+        cashback_amount = Decimal('0.00')
+        total_with_penalty = outstanding_balance
+        total_with_cashback = outstanding_balance
+        
+        if days_until is not None:
+            if days_until < 0:
+                # Late payment - calculate penalty
+                late_days = abs(days_until)
+                penalty_amount = (outstanding_balance * penalty_percentage * late_days) / 100
+                total_with_penalty = outstanding_balance + penalty_amount
+            elif days_until > 0:
+                # Early payment - calculate cashback
+                early_days = days_until
+                cashback_amount = (outstanding_balance * cashback_percentage * early_days) / 100
+                total_with_cashback = outstanding_balance - cashback_amount
+        
+        # Build collection schedule data
+        schedule_data = {
+            'user_id': user.id,
+            'customer_name': user.name,
+            'username': str(user.username),
+            'payment_period_name': payment_period_name or 'غير محدد',
+            'period_in_days': period_days or 0,
+            'latest_invoice_date': profile.latest_invoice_date,
+            'expected_collection_date': expected_date,
+            'days_until_collection': days_until or 0,
+            'outstanding_balance': outstanding_balance,
+            'is_overdue': is_overdue,
+            # Penalty
+            'penalty_percentage': penalty_percentage,
+            'penalty_amount': penalty_amount,
+            'total_with_penalty': total_with_penalty,
+            # Cashback
+            'cashback_percentage': cashback_percentage,
+            'cashback_amount': cashback_amount,
+            'total_with_cashback': total_with_cashback,
+        }
+        
+        # Serialize data
+        serializer = self.get_serializer(schedule_data)
+        
+        return Response(serializer.data)
+
+
+class MyAccountStatementAPIView(GenericAPIView):
+    """
+    كشف حساب المستخدم الحالي
+    My Account Statement - Transaction history for the logged-in user
+    
+    This endpoint allows authenticated users to view their complete
+    account statement with all transactions and running balance.
+    
+    Query Parameters:
+    - type: نوع المعاملة (اختياري - لفلترة نوع معين من المعاملات)
+    - date_from: من تاريخ (YYYY-MM-DD)
+    - date_to: إلى تاريخ (YYYY-MM-DD)
+    - limit: عدد المعاملات (default: all)
+    
+    Returns:
+    - User info (معلومات المستخدم)
+    - Current balance (الرصيد الحالي)
+    - Credit limit (حد الائتمان)
+    - List of all transactions with running balance (قائمة المعاملات مع الرصيد الجاري)
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = AccountTransactionReadSerializer
+    
+    def get(self, request, *args, **kwargs):
+        from finance.choices import NEGATIVE_AFFECTING_TRANSACTIONS, POSTIVE_AFFECTING_TRANSACTIONS
+        
+        user = request.user
+        
+        # Get user's account
+        try:
+            account = user.account
+        except:
+            return Response({
+                'error': 'لا يوجد حساب مالي لهذا المستخدم / No financial account found for this user'
+            }, status=404)
+        
+        # Get query parameters
+        type_filter = request.query_params.get('type', None)
+        date_from = request.query_params.get('date_from', None)
+        date_to = request.query_params.get('date_to', None)
+        limit = request.query_params.get('limit', None)
+        
+        # Get all transactions for this account
+        queryset = AccountTransaction.objects.filter(account=account)
+        
+        # Apply type filter
+        if type_filter:
+            queryset = queryset.filter(type=type_filter)
+        
+        # Apply date range filters
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+                queryset = queryset.filter(at__gte=date_from_obj)
+            except ValueError:
+                pass  # Invalid date format, skip filter
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+                # Add one day to include the entire date_to day
+                date_to_obj = date_to_obj + timedelta(days=1)
+                queryset = queryset.filter(at__lt=date_to_obj)
+            except ValueError:
+                pass  # Invalid date format, skip filter
+        
+        # Order by date (oldest first) for running balance calculation
+        transactions = queryset.order_by('at', 'id')
+        
+        # Apply limit if specified
+        if limit:
+            try:
+                limit_int = int(limit)
+                if limit_int > 0:
+                    transactions = transactions[:limit_int]
+            except ValueError:
+                pass  # Invalid limit, ignore
+        
+        # Calculate running balance
+        running_balance = Decimal('0.00')
+        statement_data = []
+        
+        for txn in transactions:
+            # Determine if this transaction increases or decreases balance
+            if txn.type in NEGATIVE_AFFECTING_TRANSACTIONS:
+                running_balance -= txn.amount
+            elif txn.type in POSTIVE_AFFECTING_TRANSACTIONS:
+                running_balance += txn.amount
+            
+            statement_data.append({
+                'id': txn.id,
+                'transaction_date': txn.at,
+                'type': txn.type,
+                'type_label': txn.get_type_display(),
+                'amount': txn.amount,
+                'balance_after': running_balance,
+                'remarks': getattr(txn.related_object, 'remarks', '') if txn.related_object else '',
+                'related_object_type': txn.related_object_type.model if txn.related_object_type else None,
+                'related_object_id': txn.related_object_id,
+            })
+        
+        # Reverse to show newest first
+        statement_data.reverse()
+        
+        # Build response
+        response_data = {
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'username': str(user.username),
+                'role': user.role,
+            },
+            'account': {
+                'id': account.id,
+                'current_balance': float(account.balance),
+                'credit_limit': float(account.credit_limit) if account.credit_limit else None,
+                'remaining_credit': float(account.remaining_credit) if account.remaining_credit else None,
+            },
+            'statement': {
+                'total_transactions': len(statement_data),
+                'date_from': date_from,
+                'date_to': date_to,
+                'type_filter': type_filter,
+                'transactions': statement_data,
+            }
+        }
+        
+        return Response(response_data)
