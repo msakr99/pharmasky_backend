@@ -1,5 +1,5 @@
 """
-Serializers for core models.
+Serializers for WorkShift model.
 """
 
 from rest_framework import serializers

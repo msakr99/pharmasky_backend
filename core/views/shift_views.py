@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Sum, Avg, F
 
 from core.models import WorkShift
-from core.serializers import (
+from core.serializers.shift_serializers import (
     WorkShiftReadSerializer,
     WorkShiftStartSerializer,
     WorkShiftCloseSerializer
