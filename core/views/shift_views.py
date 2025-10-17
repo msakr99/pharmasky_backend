@@ -1,5 +1,5 @@
 """
-Views for core functionality.
+Views for work shift functionality.
 """
 
 from rest_framework.views import APIView
@@ -18,7 +18,6 @@ from core.serializers import (
 from core.responses import APIResponse
 from core.views.abstract_paginations import CustomPageNumberPagination
 from accounts.permissions import AdminRoleAuthentication, ManagerRoleAuthentication
-from accounts.choices import Role
 
 
 class StartWorkShiftAPIView(APIView):
