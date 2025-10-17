@@ -51,7 +51,12 @@ RUN mkdir -p /app/logs
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser
-RUN chown -R appuser:appuser /app
+
+# Create celerybeat directory with proper permissions
+RUN mkdir -p /app/celerybeat && \
+    chown -R appuser:appuser /app && \
+    chmod -R 775 /app/celerybeat
+
 USER appuser
 
 # Expose port
