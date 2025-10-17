@@ -69,6 +69,17 @@ class WorkShift(models.Model):
         ('CLOSED', 'مغلقة'),
     ]
     
+    class Meta:
+        app_label = 'core'
+        verbose_name = 'وردية'
+        verbose_name_plural = 'الورديات'
+        ordering = ['-start_time']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['start_time']),
+            models.Index(fields=['-start_time']),
+        ]
+    
     started_by = models.ForeignKey(
         'accounts.User',
         on_delete=models.SET_NULL,
@@ -147,16 +158,6 @@ class WorkShift(models.Model):
         default="",
         verbose_name='ملاحظات'
     )
-    
-    class Meta:
-        verbose_name = 'وردية'
-        verbose_name_plural = 'الورديات'
-        ordering = ['-start_time']
-        indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['start_time']),
-            models.Index(fields=['-start_time']),
-        ]
     
     def __str__(self):
         duration = self.get_duration()
