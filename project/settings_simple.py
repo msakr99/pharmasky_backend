@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_filters',
     # Custom apps
+    'core',
     'accounts',
     'market',
     'inventory',
