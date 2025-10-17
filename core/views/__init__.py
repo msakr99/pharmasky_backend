@@ -2,19 +2,5 @@
 Core views module.
 """
 
-from core.views.shift_views import (
-    StartWorkShiftAPIView,
-    CloseWorkShiftAPIView,
-    CurrentWorkShiftAPIView,
-    WorkShiftListAPIView,
-    WorkShiftStatsAPIView,
-)
-
-__all__ = [
-    'StartWorkShiftAPIView',
-    'CloseWorkShiftAPIView',
-    'CurrentWorkShiftAPIView',
-    'WorkShiftListAPIView',
-    'WorkShiftStatsAPIView',
-]
-
+# Note: Import shift views directly from shift_views module to avoid circular imports
+# from core.views.shift_views import StartWorkShiftAPIView, etc.
