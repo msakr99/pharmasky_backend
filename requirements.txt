@@ -13,6 +13,7 @@ django-import-export
 drf-spectacular
 django-celery-beat
 # django-push-notifications
+# pyfcm>=1.5.4  # استبدلناها بـ firebase-admin (موجود بالفعل)
 celery
 redis
 psycopg2-binary

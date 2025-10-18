@@ -218,3 +218,9 @@ DIGITALOCEAN_AGENT_URL = env('DIGITALOCEAN_AGENT_URL', default='https://api.open
 MINIMUM_PHARMACY_INVOICE_SUB_TOTAL = 600
 MAX_RETURN_PERIOD_IN_DAYS = 7
 
+# ═══════════════════════════════════════════════════════════════════
+# Firebase Cloud Messaging (FCM) Configuration
+# ═══════════════════════════════════════════════════════════════════
+# مسار ملف Firebase Service Account credentials
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials", "pharmasky46-firebase-adminsdk.json")
+

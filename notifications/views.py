@@ -19,7 +19,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 
-from notifications.models import Notification, Topic, TopicSubscription
+from notifications.models import Notification, Topic, TopicSubscription, FCMToken
 from notifications.serializers import (
     NotificationReadSerializer,
     NotificationWriteSerializer,
@@ -29,6 +29,7 @@ from notifications.serializers import (
     TopicSubscriptionReadSerializer,
     TopicSubscriptionWriteSerializer,
     BulkNotificationSerializer,
+    FCMTokenSerializer,
 )
 from core.responses import APIResponse
 from core.views.abstract_paginations import CustomPageNumberPagination
@@ -400,5 +401,110 @@ class MyTopicsAPIView(APIView):
         return APIResponse.success(
             data=topics_data,
             message=_("Topics with subscription status retrieved successfully.")
+        )
+
+
+# ===========================
+# FCM Token Views
+# ===========================
+
+class SaveFCMTokenAPIView(CreateAPIView):
+    """
+    حفظ FCM Token للمستخدم المسجل
+    
+    يستخدم لتسجيل FCM Token من Firebase Cloud Messaging
+    لإرسال Push Notifications للمستخدم
+    
+    **Body Parameters:**
+    - fcm_token (string, required): FCM Token من Firebase
+    - device_type (string, optional): نوع الجهاز (web, android, ios)
+    - device_name (string, optional): اسم الجهاز
+    
+    **Example Request:**
+    ```json
+    {
+        "fcm_token": "eLxBu5Z8QoWx...",
+        "device_type": "web",
+        "device_name": "Chrome on Windows"
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+        "success": true,
+        "data": {
+            "id": 1,
+            "message": "FCM Token saved successfully",
+            "device_type": "web",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z"
+        }
+    }
+    ```
+    """
+    
+    serializer_class = FCMTokenSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        """حفظ FCM Token وإرجاع استجابة منسقة"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        
+        return APIResponse.success(
+            data=serializer.to_representation(instance),
+            message=_("FCM Token saved successfully"),
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+class ListUserFCMTokensAPIView(ListAPIView):
+    """
+    عرض جميع FCM Tokens الخاصة بالمستخدم الحالي
+    
+    يعرض جميع الأجهزة المسجلة للمستخدم
+    """
+    
+    serializer_class = FCMTokenSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPageNumberPagination
+    
+    def get_queryset(self):
+        """الحصول على tokens الخاصة بالمستخدم الحالي فقط"""
+        return FCMToken.objects.filter(user=self.request.user, is_active=True)
+    
+    def list(self, request, *args, **kwargs):
+        """إرجاع قائمة الـ tokens بشكل منسق"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return APIResponse.success(
+            data=serializer.data,
+            message=_("FCM Tokens retrieved successfully"),
+        )
+
+
+class DeleteFCMTokenAPIView(DestroyAPIView):
+    """
+    حذف FCM Token (إلغاء تسجيل جهاز)
+    
+    يستخدم عندما يريد المستخدم إيقاف الإشعارات على جهاز معين
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """الحصول على tokens الخاصة بالمستخدم الحالي فقط"""
+        return FCMToken.objects.filter(user=self.request.user)
+    
+    def destroy(self, request, *args, **kwargs):
+        """حذف Token وإرجاع استجابة منسقة"""
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        
+        return APIResponse.success(
+            message=_("FCM Token deleted successfully")
         )
 

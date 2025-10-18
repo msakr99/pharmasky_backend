@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from core.admin.abstract_admin import DefaultBaseAdminItems
-from notifications.models import Notification, Topic, TopicSubscription
+from notifications.models import Notification, Topic, TopicSubscription, FCMToken
 # from notifications.utils import send_user_fcm_message  # Temporarily disabled
 
 
@@ -49,3 +49,40 @@ class TopicSubscriptionModelAdmin(DefaultBaseAdminItems):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("user", "topic")
+
+
+@admin.register(FCMToken)
+class FCMTokenModelAdmin(DefaultBaseAdminItems):
+    """إدارة FCM Tokens في Django Admin"""
+
+    @admin.action(description="Deactivate selected tokens")
+    def deactivate_tokens(self, request, queryset):
+        """إلغاء تفعيل التوكنات المحددة"""
+        queryset.update(is_active=False)
+        self.message_user(request, f"تم إلغاء تفعيل {queryset.count()} توكن")
+
+    @admin.action(description="Activate selected tokens")
+    def activate_tokens(self, request, queryset):
+        """تفعيل التوكنات المحددة"""
+        queryset.update(is_active=True)
+        self.message_user(request, f"تم تفعيل {queryset.count()} توكن")
+
+    actions = [deactivate_tokens, activate_tokens]
+    list_display = (
+        "id",
+        "user",
+        "device_type",
+        "device_name",
+        "is_active",
+        "created_at",
+        "last_used",
+    )
+    list_filter = ("device_type", "is_active", "created_at")
+    search_fields = ("user__username", "device_name", "token")
+    readonly_fields = ("created_at", "updated_at", "last_used")
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    autocomplete_fields = ("user",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user")

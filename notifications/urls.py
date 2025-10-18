@@ -109,5 +109,22 @@ urlpatterns = [
         views.TopicSubscriptionDeleteAPIView.as_view(),
         name="subscriptions-delete",
     ),
+    
+    # FCM Token URLs (Push Notifications)
+    path(
+        "save-fcm-token/",
+        views.SaveFCMTokenAPIView.as_view(),
+        name="save-fcm-token",
+    ),
+    path(
+        "fcm-tokens/",
+        views.ListUserFCMTokensAPIView.as_view(),
+        name="fcm-tokens-list",
+    ),
+    path(
+        "fcm-tokens/<int:pk>/delete/",
+        views.DeleteFCMTokenAPIView.as_view(),
+        name="fcm-token-delete",
+    ),
 ]
 

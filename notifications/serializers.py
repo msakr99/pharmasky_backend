@@ -9,7 +9,7 @@ from django.apps import apps
 from django.utils.translation import gettext_lazy as _
 
 from core.serializers.abstract_serializers import BaseModelSerializer
-from notifications.models import Notification, Topic, TopicSubscription
+from notifications.models import Notification, Topic, TopicSubscription, FCMToken
 
 
 get_model = apps.get_model
@@ -269,4 +269,72 @@ class BulkNotificationSerializer(serializers.Serializer):
                 "message": _("{count} notifications created successfully.").format(count=len(instance))
             }
         return NotificationReadSerializer(instance, context=self.context).data
+
+
+class FCMTokenSerializer(BaseModelSerializer):
+    """
+    Serializer لحفظ FCM Token
+    يستخدم لتسجيل التوكن الخاص بجهاز المستخدم لإرسال Push Notifications
+    """
+
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    fcm_token = serializers.CharField(
+        max_length=500, required=True, help_text=_("FCM Token من Firebase")
+    )
+    device_type = serializers.ChoiceField(
+        choices=FCMToken.DEVICE_TYPE_CHOICES,
+        default="web",
+        help_text=_("نوع الجهاز"),
+    )
+    device_name = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text=_("اسم الجهاز (اختياري)"),
+    )
+
+    class Meta:
+        model = FCMToken
+        fields = ["id", "user", "fcm_token", "device_type", "device_name"]
+        read_only_fields = ["id"]
+
+    def validate_fcm_token(self, value):
+        """التحقق من صحة FCM Token"""
+        if not value or len(value) < 10:
+            raise serializers.ValidationError(
+                _("FCM Token غير صالح. يجب أن يكون نصًا طويلًا.")
+            )
+        return value
+
+    def create(self, validated_data):
+        """
+        إنشاء أو تحديث FCM Token
+        إذا كان التوكن موجودًا، يتم تحديثه بدلاً من إنشاء واحد جديد
+        """
+        fcm_token = validated_data.pop("fcm_token")
+        user = validated_data.get("user")
+
+        # البحث عن التوكن الموجود
+        token_obj, created = FCMToken.objects.update_or_create(
+            token=fcm_token,
+            defaults={
+                "user": user,
+                "device_type": validated_data.get("device_type", "web"),
+                "device_name": validated_data.get("device_name", ""),
+                "is_active": True,
+            },
+        )
+
+        return token_obj
+
+    def to_representation(self, instance):
+        """تحويل الاستجابة"""
+        return {
+            "id": instance.id,
+            "message": _("FCM Token saved successfully"),
+            "device_type": instance.device_type,
+            "is_active": instance.is_active,
+            "created_at": instance.created_at,
+        }
 
