@@ -178,3 +178,25 @@ DIGITALOCEAN_AGENT_URL = os.getenv('DIGITALOCEAN_AGENT_URL', 'https://api.openai
 # Custom application settings
 MINIMUM_PHARMACY_INVOICE_SUB_TOTAL = 600
 MAX_RETURN_PERIOD_IN_DAYS = 7
+# ================================
+# Firebase Cloud Messaging (FCM)
+# ================================
+import firebase_admin
+from firebase_admin import credentials
+
+FIREBASE_CREDENTIALS_PATH = os.getenv(
+    "FIREBASE_CREDENTIALS",
+    default=str(BASE_DIR / "credentials" / "pharmasky46-firebase-adminsdk.json")
+)
+
+try:
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+        FIREBASE_CREDENTIALS = firebase_admin.credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(FIREBASE_CREDENTIALS)
+        print("✅ Firebase Admin initialized successfully")
+    else:
+        print(f"⚠️  Firebase credentials file not found at: {FIREBASE_CREDENTIALS_PATH}")
+except Exception as e:
+    print(f"⚠️  Firebase initialization error: {e}")
+
+FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', '')
