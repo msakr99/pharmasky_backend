@@ -186,7 +186,44 @@ def send_push_notification(
         )
         
         # إرسال الإشعار
-        response = messaging.send_multicast(fcm_message)
+        # استخدام send_multicast بدلاً من send_each للتوافق مع جميع الإصدارات
+        try:
+            response = messaging.send_multicast(fcm_message)
+        except (AttributeError, TypeError):
+            # إذا send_multicast غير متاح، استخدم send لكل token على حدة
+            success_count = 0
+            failure_count = 0
+            responses = []
+            
+            for token in tokens:
+                try:
+                    msg = messaging.Message(
+                        notification=messaging.Notification(
+                            title=title,
+                            body=message,
+                            image=image_url if image_url else None,
+                        ),
+                        data=notification_data,
+                        token=token,
+                    )
+                    msg_id = messaging.send(msg)
+                    success_count += 1
+                    logger.info(f"Push sent successfully to token {token[:20]}...")
+                except Exception as e:
+                    failure_count += 1
+                    logger.error(f"Error sending to token {token[:20]}: {e}")
+                    # إلغاء تفعيل الـ token إذا كان غير صالح
+                    if 'invalid' in str(e).lower() or 'not-registered' in str(e).lower():
+                        FCMToken.objects.filter(token=token).update(is_active=False)
+            
+            # إنشاء response object بسيط
+            class SimpleResponse:
+                def __init__(self, success, failure):
+                    self.success_count = success
+                    self.failure_count = failure
+                    self.responses = []
+            
+            response = SimpleResponse(success_count, failure_count)
         
         # معالجة النتائج
         success_count = response.success_count
