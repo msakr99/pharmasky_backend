@@ -1,0 +1,16 @@
+# أنشئ ملف .env.local في مشروع Next.js وأضف هذه المتغيرات:
+
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCbmKWUqVmKqZGq4UhEEoZ8RXqnqfnPqkE
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=pharmasky46.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=pharmasky46
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=pharmasky46.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=104845058540
+NEXT_PUBLIC_FIREBASE_APP_ID=1:104845058540:web:xxxxxxxxxxxxx
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=YOUR_VAPID_KEY_HERE
+
+NEXT_PUBLIC_API_URL=http://167.71.40.9/api/v1
+
+# احصل على القيم من Firebase Console:
+# https://console.firebase.google.com/
+# Project Settings → Your apps → Web
+
