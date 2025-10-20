@@ -255,3 +255,135 @@ class WorkShift(models.Model):
         )
         
         self.save()
+
+
+class SearchLog(models.Model):
+    """
+    Log all search queries for analytics
+    """
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='search_logs'
+    )
+    query = models.CharField(max_length=200, db_index=True)
+    search_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('fts', 'Full Text Search'),
+            ('trigram', 'Trigram Similarity'),
+            ('hybrid', 'Hybrid'),
+            ('legacy', 'Legacy Search'),
+        ],
+        default='hybrid'
+    )
+    search_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('product', 'Product'),
+            ('offer', 'Max Offer'),
+        ],
+        default='product'
+    )
+    results_count = models.IntegerField(default=0)
+    response_time = models.FloatField(help_text='Response time in seconds')
+    min_similarity = models.FloatField(null=True, blank=True)
+    
+    # User info for analytics
+    user_role = models.CharField(max_length=50, blank=True, default='')
+    
+    # Results clicked
+    clicked = models.BooleanField(default=False, help_text='User clicked on a result')
+    clicked_position = models.IntegerField(null=True, blank=True, help_text='Position of clicked result')
+    
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    
+    class Meta:
+        app_label = 'core'
+        verbose_name = 'Search Log'
+        verbose_name_plural = 'Search Logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['query', '-created_at']),
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['search_type', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.query} - {self.results_count} results ({self.response_time:.3f}s)"
+    
+    @classmethod
+    def get_popular_searches(cls, limit=10, search_type=None, days=7):
+        """Get most popular search queries"""
+        from datetime import timedelta
+        from django.db.models import Count, Avg
+        
+        since = timezone.now() - timedelta(days=days)
+        qs = cls.objects.filter(created_at__gte=since)
+        
+        if search_type:
+            qs = qs.filter(search_type=search_type)
+        
+        return qs.values('query').annotate(
+            count=Count('id'),
+            avg_results=Avg('results_count'),
+            avg_time=Avg('response_time')
+        ).order_by('-count')[:limit]
+    
+    @classmethod
+    def get_slow_searches(cls, threshold=1.0, limit=10):
+        """Get slow search queries"""
+        return cls.objects.filter(
+            response_time__gte=threshold
+        ).order_by('-response_time')[:limit]
+    
+    @classmethod
+    def get_zero_result_searches(cls, limit=10, days=7):
+        """Get searches with zero results"""
+        from datetime import timedelta
+        from django.db.models import Count
+        
+        since = timezone.now() - timedelta(days=days)
+        return cls.objects.filter(
+            results_count=0,
+            created_at__gte=since
+        ).values('query').annotate(
+            count=Count('id')
+        ).order_by('-count')[:limit]
+
+
+class PopularSearch(models.Model):
+    """
+    Cache popular searches for quick access
+    Updated periodically via Celery task
+    """
+    query = models.CharField(max_length=200, unique=True)
+    search_count = models.IntegerField(default=0)
+    avg_results = models.IntegerField(default=0)
+    avg_response_time = models.FloatField(default=0.0)
+    search_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('product', 'Product'),
+            ('offer', 'Max Offer'),
+        ],
+        default='product'
+    )
+    last_searched = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'core'
+        verbose_name = 'Popular Search'
+        verbose_name_plural = 'Popular Searches'
+        ordering = ['-search_count', '-last_searched']
+        indexes = [
+            models.Index(fields=['-search_count']),
+            models.Index(fields=['search_type', '-search_count']),
+        ]
+    
+    def __str__(self):
+        return f"{self.query} ({self.search_count} searches)"

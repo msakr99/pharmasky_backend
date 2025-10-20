@@ -56,6 +56,7 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "django_celery_beat",
     "push_notifications",
+    "django.contrib.postgres",
 ]
 
 LOCAL_APPS = [
@@ -84,6 +85,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.search_performance.SearchPerformanceMiddleware",
 ]
 
 ROOT_URLCONF = "project.urls"

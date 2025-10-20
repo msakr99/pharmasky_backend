@@ -108,12 +108,79 @@ class ProductListAPIView(ListAPIView):
     ordering = ["name"]
 
     def get_queryset(self):
+        from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+        from django.contrib.postgres.search import TrigramSimilarity
+        from django.db.models import F, Value, Q, Case, When, IntegerField
+        from django.core.cache import cache
+        import hashlib
+        
         user = self.request.user
-        queryset = Product.objects.with_has_image().all()
+        queryset = Product.objects.with_has_image().select_related('company', 'category')
+        
+        # Advanced search with PostgreSQL FTS + Trigram
+        search_query = self.request.query_params.get('q')
+        search_mode = self.request.query_params.get('search_mode', 'hybrid')
+        min_similarity_param = self.request.query_params.get('min_similarity', '0.2')
+        try:
+            min_similarity = float(str(min_similarity_param))
+        except (ValueError, TypeError):
+            min_similarity = 0.2
+        
+        if search_query:
+            # Redis Cache for search results
+            cache_key_raw = f"search_products_{search_query}_{search_mode}_{min_similarity}_{user.role if hasattr(user, 'role') else 'anon'}"
+            cache_key = hashlib.md5(cache_key_raw.encode()).hexdigest()
+            
+            cached_ids = cache.get(cache_key)
+            if cached_ids is not None:
+                # Return cached results maintaining order
+                queryset = queryset.filter(id__in=cached_ids)
+                preserved_order = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(cached_ids)])
+                return queryset.order_by(preserved_order)
+            
+            # Arabic config for better stemming (changed from 'simple')
+            vector = (
+                SearchVector('name', weight='A', config='arabic') +
+                SearchVector('effective_material', weight='B', config='arabic') +
+                SearchVector('company__name', weight='C', config='arabic') +
+                SearchVector('e_name', weight='D', config='arabic')
+            )
+            query = SearchQuery(search_query, config='arabic', search_type='websearch')
+            queryset = queryset.annotate(rank=SearchRank(vector, query))
 
-        # البحث اليدوي كبديل
+            # Trigram similarity for fuzzy matching
+            trig = (
+                TrigramSimilarity('name', search_query) * 1.0 +
+                TrigramSimilarity('effective_material', search_query) * 0.8 +
+                TrigramSimilarity('company__name', search_query) * 0.6 +
+                TrigramSimilarity('e_name', search_query) * 0.4
+            )
+            queryset = queryset.annotate(sim=trig)
+
+            if search_mode == 'fts':
+                queryset = queryset.filter(rank__gt=0).order_by('-rank')
+            elif search_mode == 'trigram':
+                queryset = queryset.filter(sim__gte=min_similarity).order_by('-sim')
+            else:  # hybrid
+                queryset = queryset.filter(Q(rank__gt=0) | Q(sim__gte=min_similarity))
+                queryset = queryset.annotate(score=F('rank')*1.0 + F('sim')*0.7).order_by('-score')
+
+            # Partial prefix match boost
+            queryset = queryset.annotate(
+                starts=Case(
+                    When(name__istartswith=search_query, then=Value(1)), 
+                    default=Value(0), 
+                    output_field=IntegerField()
+                )
+            ).order_by('-starts', '-score' if search_mode == 'hybrid' else '-rank' if search_mode == 'fts' else '-sim')
+            
+            # Cache the result IDs for 5 minutes
+            result_ids = list(queryset.values_list('id', flat=True)[:100])  # Cache top 100
+            cache.set(cache_key, result_ids, timeout=300)
+        
+        # Fallback to original search for backward compatibility
         search_term = self.request.GET.get('search')
-        if search_term:
+        if search_term and not search_query:
             from django.db import models
             queryset = queryset.filter(
                 models.Q(name__icontains=search_term) |
