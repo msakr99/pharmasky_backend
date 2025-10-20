@@ -1,0 +1,16 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /accounts/
+Disallow: /.env
+Disallow: /config/
+
+# Allow public areas
+Allow: /
+
+# Crawl delay to reduce server load
+Crawl-delay: 10
+
+# Sitemap (update with your actual sitemap URL if you have one)
+# Sitemap: https://pharmasky.com/sitemap.xml
+

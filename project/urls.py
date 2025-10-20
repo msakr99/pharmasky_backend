@@ -3,6 +3,7 @@ from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 # from push_notifications.api.rest_framework import GCMDeviceAuthorizedViewSet  # Disabled temporarily
 
@@ -34,6 +35,7 @@ def home_view(request):
 
 urlpatterns = [
     path("", home_view, name="home"),
+    path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name="robots"),
     path("admin/", admin.site.urls),
     # path("__debug__/", include("debug_toolbar.urls")),  # Disabled for production
     path("accounts/", include("accounts.urls")),
