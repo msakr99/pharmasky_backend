@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 
 # Install system dependencies
-# Fix for apt-get repository issues
+# Updated for Debian Trixie compatibility
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get update --fix-missing && \
@@ -26,9 +26,8 @@ RUN apt-get clean && \
     libpangoft2-1.0-0 \
     libffi-dev \
     libcairo2 \
-    libpango1.0-0 \
     libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     shared-mime-info \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
