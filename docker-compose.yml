@@ -121,14 +121,7 @@ services:
     networks:
       - pharmasky_network
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # If no GPU available, remove the deploy section above
+    # Running on CPU (no GPU required)
   
   fastapi_db:
     image: postgres:15-alpine
