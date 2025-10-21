@@ -1,0 +1,18 @@
+# Add this to your main docker-compose.yml file
+
+  dashboard:
+    build: ./dashboard
+    container_name: pharmasky_dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_DJANGO_API=http://localhost:8000
+      - NEXT_PUBLIC_FASTAPI_API=http://localhost:8001
+      - NEXT_PUBLIC_API_KEY=${AI_AGENT_API_KEY:-change-this-in-production}
+    networks:
+      - pharmasky_network
+    restart: unless-stopped
+    depends_on:
+      - web
+      - fastapi_agent
+

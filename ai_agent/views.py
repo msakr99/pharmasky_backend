@@ -3,7 +3,7 @@ API Views for AI Agent
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from ai_agent.serializers import (
     ChatRequestSerializer,
@@ -13,8 +13,10 @@ from ai_agent.serializers import (
     CallRequestSerializer,
     CallResponseSerializer
 )
-from ai_agent.models import ChatSession
+from ai_agent.models import ChatSession, VoiceCall, CallTranscript, CallAction
 from ai_agent.throttling import AIAgentUserThrottle
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
 import base64
 from io import BytesIO
 

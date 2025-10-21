@@ -184,6 +184,7 @@ DEFAULT_RENDERER_CLASSES = (
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
+        "core.authentication.APIKeyAuthentication",  # API Key for AI Agent service
     ],
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -285,8 +286,15 @@ CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS', default=[])
 CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', default=[])
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = list(default_headers) + ["X-Timezone", "content-disposition"]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "X-Timezone", 
+    "content-disposition",
+    "X-API-Key",  # Allow API Key header for AI Agent service
+]
 CORS_EXPOSE_HEADERS = ["Content-Disposition"]
+
+# AI Agent Service Configuration
+AI_AGENT_API_KEY = env('AI_AGENT_API_KEY', default='change-this-in-production')
 
 # Internationalization
 ROSETTA_SHOW_AT_ADMIN_PANEL = True

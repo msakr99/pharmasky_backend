@@ -109,11 +109,83 @@ services:
       - pharmasky_network
     restart: unless-stopped
 
+  # AI Agent Services
+  
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pharmasky_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - pharmasky_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # If no GPU available, remove the deploy section above
+  
+  fastapi_db:
+    image: postgres:15-alpine
+    container_name: pharmasky_fastapi_db
+    environment:
+      POSTGRES_DB: agent_db
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent_password_change_in_production
+    volumes:
+      - fastapi_db_data:/var/lib/postgresql/data
+    networks:
+      - pharmasky_network
+    restart: unless-stopped
+  
+  fastapi_agent:
+    build: ./fastapi_agent
+    container_name: pharmasky_fastapi_agent
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./fastapi_agent:/app
+      - audio_storage:/app/recordings
+      - rag_data:/app/rag_data
+      - ./rag_data:/app/shared_rag_data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - DEBUG=True
+      - DJANGO_API_URL=http://web:8000
+      - DJANGO_API_KEY=${AI_AGENT_API_KEY:-change-this-in-production}
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=phi3:mini
+      - DATABASE_URL=postgresql://agent:agent_password_change_in_production@fastapi_db:5432/agent_db
+      - CHROMA_PERSIST_DIR=/app/chroma_db
+      - WHISPER_MODEL=base
+      - TTS_LANGUAGE=ar
+      - AUDIO_STORAGE_PATH=/app/recordings
+    depends_on:
+      - ollama
+      - fastapi_db
+      - web
+    networks:
+      - pharmasky_network
+    restart: unless-stopped
+
 volumes:
   static_volume:
   media_volume:
   redis_data:
   celerybeat_data:
+  ollama_data:
+  fastapi_db_data:
+  audio_storage:
+  rag_data:
 
 networks:
   pharmasky_network:

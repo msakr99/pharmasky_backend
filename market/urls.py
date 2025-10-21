@@ -1,5 +1,5 @@
 from django.urls import path
-from market import views, filter_views
+from market import views, filter_views, ai_views
 from django.conf import settings
 from django.http import HttpResponse
 import pandas as pd
@@ -246,8 +246,38 @@ filter_urls = [
     ),
 ]
 
+# AI Agent specific endpoints
+ai_agent_urls = [
+    path(
+        "ai/drugs/search/",
+        ai_views.DrugSearchAPIView.as_view(),
+        name="ai-drug-search",
+    ),
+    path(
+        "ai/drugs/stock/",
+        ai_views.DrugStockCheckAPIView.as_view(),
+        name="ai-drug-stock-check",
+    ),
+    path(
+        "ai/drugs/<int:product_id>/recommendations/",
+        ai_views.DrugRecommendationAPIView.as_view(),
+        name="ai-drug-recommendations",
+    ),
+    path(
+        "ai/orders/create/",
+        ai_views.CreateOrderAPIView.as_view(),
+        name="ai-create-order",
+    ),
+    path(
+        "ai/pharmacies/<int:pharmacy_id>/",
+        ai_views.PharmacyInfoAPIView.as_view(),
+        name="ai-pharmacy-info",
+    ),
+]
+
 
 urlpatterns += filter_urls
+urlpatterns += ai_agent_urls
 
 
 if settings.DEBUG:
