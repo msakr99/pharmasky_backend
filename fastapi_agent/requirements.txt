@@ -16,8 +16,7 @@ langchain==0.0.350
 langchain-community==0.0.2
 sentence-transformers==2.2.2
 
-# WebRTC (disabled for MVP - use WebSocket instead)
-# aiortc==1.6.0
+# WebSocket for audio streaming
 aiohttp==3.9.1
 websockets==12.0
 
