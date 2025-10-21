@@ -78,16 +78,16 @@ class VoiceCall(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='voice_calls',
-        related_query_name='voice_calls'
+        related_name='pharmacy_voice_calls',
+        related_query_name='pharmacy_voice_calls'
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='voice_calls',
-        related_query_name='voice_calls'
+        related_name='user_voice_calls',
+        related_query_name='user_voice_calls'
     )
     session_id = models.CharField(max_length=255, unique=True, db_index=True)
     audio_file = models.FileField(upload_to='voice_calls/', blank=True, null=True)
