@@ -159,11 +159,13 @@ async def call(request: CallRequest):
 
 # AI Agent Function endpoints
 @router.post("/check-availability")
-async def check_availability(medicine_name: str, user_id: int = None):
+async def check_availability(request: dict):
     """
     Check if a medicine is available in Max offers
     """
     try:
+        medicine_name = request.get('medicine_name')
+        user_id = request.get('user_id')
         result = await mcp_service.check_availability(medicine_name, user_id)
         return result
     except Exception as e:
@@ -172,11 +174,12 @@ async def check_availability(medicine_name: str, user_id: int = None):
 
 
 @router.post("/suggest-alternative")
-async def suggest_alternative(medicine_name: str):
+async def suggest_alternative(request: dict):
     """
     Suggest alternative medicines
     """
     try:
+        medicine_name = request.get('medicine_name')
         result = await mcp_service.suggest_alternative(medicine_name)
         return result
     except Exception as e:
@@ -185,11 +188,14 @@ async def suggest_alternative(medicine_name: str):
 
 
 @router.post("/create-order")
-async def create_order(medicine_name: str, quantity: int, user_id: int):
+async def create_order(request: dict):
     """
     Create a new order
     """
     try:
+        medicine_name = request.get('medicine_name')
+        quantity = request.get('quantity')
+        user_id = request.get('user_id')
         result = await mcp_service.create_order(medicine_name, quantity, user_id)
         return result
     except Exception as e:
@@ -198,11 +204,13 @@ async def create_order(medicine_name: str, quantity: int, user_id: int):
 
 
 @router.post("/track-order")
-async def track_order(order_id: int, user_id: int):
+async def track_order(request: dict):
     """
     Track an existing order
     """
     try:
+        order_id = request.get('order_id')
+        user_id = request.get('user_id')
         result = await mcp_service.track_order(order_id, user_id)
         return result
     except Exception as e:
@@ -211,11 +219,13 @@ async def track_order(order_id: int, user_id: int):
 
 
 @router.post("/cancel-order")
-async def cancel_order(order_id: int, user_id: int):
+async def cancel_order(request: dict):
     """
     Cancel an existing order
     """
     try:
+        order_id = request.get('order_id')
+        user_id = request.get('user_id')
         result = await mcp_service.cancel_order(order_id, user_id)
         return result
     except Exception as e:
@@ -224,11 +234,14 @@ async def cancel_order(order_id: int, user_id: int):
 
 
 @router.post("/submit-complaint")
-async def submit_complaint(subject: str, body: str, user_id: int):
+async def submit_complaint(request: dict):
     """
     Submit a complaint
     """
     try:
+        subject = request.get('subject')
+        body = request.get('body')
+        user_id = request.get('user_id')
         result = await mcp_service.submit_complaint(subject, body, user_id)
         return result
     except Exception as e:
@@ -250,11 +263,13 @@ async def get_wishlist(user_id: int):
 
 
 @router.post("/add-to-wishlist")
-async def add_to_wishlist(product_name: str, user_id: int):
+async def add_to_wishlist(request: dict):
     """
     Add product to wishlist
     """
     try:
+        product_name = request.get('product_name')
+        user_id = request.get('user_id')
         result = await mcp_service.add_to_wishlist(product_name, user_id)
         return result
     except Exception as e:

@@ -206,149 +206,83 @@ Content-Type: application/json
 GET /agent/get-order-total/456
 ```
 
-## 🔧 JavaScript/React Examples
+## 🔧 JavaScript Examples
 
-### Chat Component
+### Basic Fetch Examples
 ```javascript
+// Chat API
 const sendMessage = async (message, userId, sessionId = null) => {
-  try {
-    const response = await fetch('http://localhost:8001/agent/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: message,
-        session_id: sessionId,
-        context: { user_id: userId }
-      })
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Chat error:', error);
-    throw error;
-  }
-};
-```
-
-### Voice Component
-```javascript
-const sendVoiceMessage = async (audioBlob, userId, sessionId = null) => {
-  try {
-    // Convert audio to base64
-    const base64Audio = await blobToBase64(audioBlob);
-    
-    const response = await fetch('http://localhost:8001/agent/voice', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        audio_base64: base64Audio,
-        session_id: sessionId,
-        context: { user_id: userId }
-      })
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Voice error:', error);
-    throw error;
-  }
-};
-
-const blobToBase64 = (blob) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+  const response = await fetch('http://localhost:8001/agent/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: message,
+      session_id: sessionId,
+      context: { user_id: userId }
+    })
   });
+  return response.json();
 };
-```
 
-### Function Calling
-```javascript
+// Voice API
+const sendVoiceMessage = async (audioBase64, userId, sessionId = null) => {
+  const response = await fetch('http://localhost:8001/agent/voice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio_base64: audioBase64,
+      session_id: sessionId,
+      context: { user_id: userId }
+    })
+  });
+  return response.json();
+};
+
+// Function APIs
 const checkAvailability = async (medicineName, userId) => {
-  try {
-    const response = await fetch('http://localhost:8001/agent/check-availability', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        medicine_name: medicineName,
-        user_id: userId
-      })
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Check availability error:', error);
-    throw error;
-  }
-};
-
-const createOrder = async (medicineName, quantity, userId) => {
-  try {
-    const response = await fetch('http://localhost:8001/agent/create-order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        medicine_name: medicineName,
-        quantity: quantity,
-        user_id: userId
-      })
-    });
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Create order error:', error);
-    throw error;
-  }
+  const response = await fetch('http://localhost:8001/agent/check-availability', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      medicine_name: medicineName,
+      user_id: userId
+    })
+  });
+  return response.json();
 };
 ```
 
-## 🎯 Usage Examples
-
-### 1. Simple Chat
+### Axios Examples
 ```javascript
-// Send text message
-const result = await sendMessage("عايز باراسيتامول", 123, 456);
-console.log(result.message); // AI response
-console.log(result.session_id); // Session ID
-```
+import axios from 'axios';
 
-### 2. Voice Interaction
-```javascript
-// Send voice message
-const result = await sendVoiceMessage(audioBlob, 123, 456);
-console.log(result.text); // Transcribed text
-console.log(result.audio_base64); // AI response audio
-```
-
-### 3. Smart Processing
-```javascript
-// Smart processing with function calling
-const result = await fetch('http://localhost:8001/agent/process', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    query: "عايز 10 علب باراسيتامول",
-    context: { user_id: 123 }
-  })
+const api = axios.create({
+  baseURL: 'http://localhost:8001',
+  headers: { 'Content-Type': 'application/json' }
 });
 
-const data = await result.json();
-console.log(data.response); // AI response
-console.log(data.actions); // Executed actions
+// Chat
+const chat = (message, userId, sessionId) => 
+  api.post('/agent/chat', {
+    message,
+    session_id: sessionId,
+    context: { user_id: userId }
+  });
+
+// Voice
+const voice = (audioBase64, userId, sessionId) =>
+  api.post('/agent/voice', {
+    audio_base64: audioBase64,
+    session_id: sessionId,
+    context: { user_id: userId }
+  });
+
+// Functions
+const checkAvailability = (medicineName, userId) =>
+  api.post('/agent/check-availability', {
+    medicine_name: medicineName,
+    user_id: userId
+  });
 ```
 
 ## 📊 Response Formats
@@ -371,17 +305,6 @@ console.log(data.actions); // Executed actions
 }
 ```
 
-## 🔐 Authentication
-
-Currently, the API uses user_id in the context. For production, consider implementing proper authentication headers:
-
-```javascript
-const headers = {
-  'Content-Type': 'application/json',
-  'Authorization': 'Bearer your-jwt-token'
-};
-```
-
 ## 🚀 Quick Start
 
 1. **Start FastAPI Agent:**
@@ -395,9 +318,4 @@ const headers = {
    curl -X POST http://localhost:8001/agent/chat \
      -H "Content-Type: application/json" \
      -d '{"message": "مرحبا", "context": {"user_id": 123}}'
-   ```
-
-3. **Integrate with Frontend:**
-   ```javascript
-   // Use the examples above in your React/Vue/Angular app
    ```
