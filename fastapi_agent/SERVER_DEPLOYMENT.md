@@ -8,19 +8,19 @@
 docker-compose ps
 
 # التحقق من logs
-docker-compose logs fastapi_agent
+docker-compose logs fastapi-agent
 ```
 
 ### 2. إعادة تشغيل FastAPI Agent
 ```bash
-# إعادة بناء وتشغيل fastapi_agent
+# إعادة بناء وتشغيل fastapi-agent
 cd /opt/pharmasky/fastapi_agent
-docker-compose down fastapi_agent
-docker-compose build fastapi_agent
-docker-compose up -d fastapi_agent
+docker-compose down fastapi-agent
+docker-compose build fastapi-agent
+docker-compose up -d fastapi-agent
 
 # أو إعادة تشغيل كامل
-docker-compose restart fastapi_agent
+docker-compose restart fastapi-agent
 ```
 
 ### 3. التحقق من التشغيل
@@ -64,7 +64,7 @@ sudo kill -9 <PID>
 #### مشكلة: FastAPI Agent لا يبدأ
 ```bash
 # التحقق من logs
-docker-compose logs fastapi_agent
+docker-compose logs fastapi-agent
 
 # إعادة بناء الصورة
 docker-compose build --no-cache fastapi_agent
@@ -112,10 +112,10 @@ curl http://localhost:8001/health/detailed
 ### مشكلة: "Connection refused"
 ```bash
 # التحقق من أن الخدمة تعمل
-docker-compose ps fastapi_agent
+docker-compose ps fastapi-agent
 
 # إعادة تشغيل الخدمة
-docker-compose restart fastapi_agent
+docker-compose restart fastapi-agent
 ```
 
 ### مشكلة: "Module not found"

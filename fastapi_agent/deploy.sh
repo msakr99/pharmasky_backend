@@ -11,12 +11,12 @@ fi
 
 # Stop existing services
 echo "🛑 Stopping existing services..."
-docker-compose down fastapi_agent
+docker-compose down fastapi-agent
 
 # Build and start services
 echo "🔨 Building and starting FastAPI Agent..."
-docker-compose build fastapi_agent
-docker-compose up -d fastapi_agent
+docker-compose build fastapi-agent
+docker-compose up -d fastapi-agent
 
 # Wait for service to start
 echo "⏳ Waiting for service to start..."
@@ -24,7 +24,7 @@ sleep 10
 
 # Check if service is running
 echo "🔍 Checking service status..."
-docker-compose ps fastapi_agent
+docker-compose ps fastapi-agent
 
 # Test the service
 echo "🧪 Testing service..."
@@ -36,7 +36,7 @@ if [ $? -eq 0 ]; then
 else
     echo "❌ FastAPI Agent is not responding"
     echo "📋 Checking logs..."
-    docker-compose logs --tail=20 fastapi_agent
+    docker-compose logs --tail=20 fastapi-agent
 fi
 
 # Test chat endpoint
