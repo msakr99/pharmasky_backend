@@ -27,7 +27,6 @@ def home_view(request):
             "invoices": "/invoices/",
             "shop": "/shop/",
             "inventory": "/inventory/",
-            "ai_agent": "/ai-agent/",
             "notifications": "/notifications/",
             "core": "/core/"
         }
@@ -47,7 +46,6 @@ urlpatterns = [
     path("shop/", include("shop.urls")),
     path("inventory/", include("inventory.urls")),
     path("profiles/", include("profiles.urls")),
-    path("ai-agent/", include("ai_agent.urls")),
     path("notifications/", include("notifications.urls")),
     path("core/", include("core.urls")),
     # Push notifications URLs temporarily disabled

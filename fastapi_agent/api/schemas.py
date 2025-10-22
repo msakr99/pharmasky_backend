@@ -21,6 +21,106 @@ class TranscribeResponse(BaseModel):
     duration: Optional[float] = None
 
 
+# Chat Schemas (from ai_agent)
+class ChatRequest(BaseModel):
+    """Request for chat API"""
+    message: str = Field(..., description="User message", max_length=5000)
+    session_id: Optional[int] = Field(None, description="Chat session ID")
+
+
+class ChatResponse(BaseModel):
+    """Response from chat API"""
+    message: str
+    session_id: int
+
+
+class VoiceRequest(BaseModel):
+    """Request for voice API"""
+    audio_base64: str = Field(..., description="Base64 encoded audio")
+    session_id: Optional[int] = Field(None, description="Chat session ID")
+
+
+class VoiceResponse(BaseModel):
+    """Response from voice API"""
+    text: str
+    audio_base64: str
+    session_id: int
+    transcription: str
+
+
+class CallRequest(BaseModel):
+    """Request for call API (streaming)"""
+    audio_chunk_base64: str = Field(..., description="Base64 encoded audio chunk")
+    session_id: Optional[int] = Field(None, description="Chat session ID")
+
+
+class CallResponse(BaseModel):
+    """Response from call API"""
+    audio_response_base64: str
+    text_response: str
+    is_final: bool = False
+
+
+# Session Management
+class ChatSession(BaseModel):
+    """Chat session model"""
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    is_active: bool
+    messages: List[Dict[str, Any]] = []
+
+
+class ChatMessage(BaseModel):
+    """Chat message model"""
+    id: int
+    role: str  # user, assistant, system
+    content: str
+    created_at: datetime
+    function_name: Optional[str] = None
+    function_arguments: Optional[Dict[str, Any]] = None
+    function_response: Optional[Dict[str, Any]] = None
+
+
+# Voice Call Models
+class VoiceCall(BaseModel):
+    """Voice call model"""
+    id: int
+    pharmacy_id: Optional[int] = None
+    user_id: Optional[int] = None
+    session_id: str
+    status: str  # active, completed, failed, cancelled
+    duration: int = 0
+    created_at: datetime
+    ended_at: Optional[datetime] = None
+    summary: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+
+
+class CallTranscript(BaseModel):
+    """Call transcript model"""
+    id: int
+    call_id: int
+    speaker: str  # user, assistant, system
+    text: str
+    timestamp: float
+    created_at: datetime
+
+
+class CallAction(BaseModel):
+    """Call action model"""
+    id: int
+    call_id: int
+    action_type: str
+    parameters: Dict[str, Any] = {}
+    result: Dict[str, Any] = {}
+    status: str  # pending, success, failed
+    error_message: Optional[str] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+
 # Agent Processing Schemas
 class AgentRequest(BaseModel):
     """Request to process text query"""

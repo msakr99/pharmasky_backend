@@ -149,3 +149,126 @@ async def extract_intent(text: str) -> Dict[str, Any]:
             'error': str(e)
         }
 
+
+async def process_with_functions(text: str, user_id: int = None, session_id: int = None) -> Dict[str, Any]:
+    """
+    Process text with function calling capabilities
+    Similar to ai_agent Django implementation
+    """
+    try:
+        logger.info(f"Processing with functions: {text[:100]}...")
+        
+        # Get intent and entities
+        intent_result = await extract_intent(text)
+        intent = intent_result.get('intent', 'unknown')
+        entities = intent_result.get('entities', {})
+        
+        # Process based on intent
+        if intent == 'order':
+            # Extract product and quantity
+            product = entities.get('product', '')
+            quantity = entities.get('quantity', 1)
+            
+            if product:
+                # Check availability first
+                from services import mcp_service
+                availability = await mcp_service.check_availability(product, user_id)
+                
+                if availability.get('available'):
+                    # Create order
+                    order_result = await mcp_service.create_order(product, quantity, user_id)
+                    return {
+                        'success': True,
+                        'response': order_result.get('message', 'تم إنشاء الطلب'),
+                        'action': 'create_order',
+                        'result': order_result
+                    }
+                else:
+                    # Suggest alternatives
+                    alt_result = await mcp_service.suggest_alternative(product)
+                    return {
+                        'success': True,
+                        'response': alt_result.get('message', 'المنتج غير متوفر'),
+                        'action': 'suggest_alternative',
+                        'result': alt_result
+                    }
+            else:
+                return {
+                    'success': True,
+                    'response': 'من فضلك حدد اسم الدواء المطلوب',
+                    'action': 'clarify_product'
+                }
+        
+        elif intent == 'stock_check':
+            product = entities.get('product', '')
+            if product:
+                availability = await mcp_service.check_availability(product, user_id)
+                return {
+                    'success': True,
+                    'response': availability.get('message', 'نتيجة فحص التوفر'),
+                    'action': 'check_availability',
+                    'result': availability
+                }
+            else:
+                return {
+                    'success': True,
+                    'response': 'من فضلك حدد اسم الدواء للتحقق من توفره',
+                    'action': 'clarify_product'
+                }
+        
+        elif intent == 'search':
+            product = entities.get('product', '')
+            if product:
+                availability = await mcp_service.check_availability(product, user_id)
+                return {
+                    'success': True,
+                    'response': availability.get('message', 'نتائج البحث'),
+                    'action': 'search',
+                    'result': availability
+                }
+            else:
+                return {
+                    'success': True,
+                    'response': 'من فضلك حدد اسم الدواء للبحث عنه',
+                    'action': 'clarify_product'
+                }
+        
+        else:
+            # General question - use RAG + LLM
+            from services import rag_service
+            rag_context = await rag_service.query(text, top_k=3)
+            
+            system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+استخدم المعلومات التالية للإجابة:
+"""
+            
+            if rag_context.get('results'):
+                system_prompt += "\n\nمعلومات الأدوية المتاحة:\n"
+                for item in rag_context['results']:
+                    system_prompt += f"- {item.get('text', '')}\n"
+            
+            # Get LLM response
+            llm_response = await chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
+            ])
+            
+            return {
+                'success': True,
+                'response': llm_response.get('response', 'عذراً، لم أتمكن من الإجابة'),
+                'action': 'general_response',
+                'metadata': {
+                    'rag_results_count': len(rag_context.get('results', [])),
+                    'intent': intent
+                }
+            }
+    
+    except Exception as e:
+        logger.error(f"Process with functions error: {str(e)}")
+        return {
+            'success': False,
+            'response': 'عذراً، حدث خطأ في المعالجة',
+            'error': str(e)
+        }

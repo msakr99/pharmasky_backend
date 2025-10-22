@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     DJANGO_API_URL: str = "http://web:8000"
     DJANGO_API_KEY: str = "change-this-in-production"
     
+    # OpenAI API (for ai_agent compatibility)
+    OPENAI_API_KEY: str = ""
+    DIGITALOCEAN_AGENT_URL: str = ""
+    
     # Ollama LLM
     OLLAMA_URL: str = "http://ollama:11434"
     OLLAMA_MODEL: str = "phi3:mini"

@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  fastapi-agent:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - DEBUG=False
+      - DJANGO_API_URL=http://web:8000
+      - DJANGO_API_KEY=your-django-api-key
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=phi3:mini
+      - DATABASE_URL=postgresql://agent:agent@fastapi_db:5432/agent_db
+      - CHROMA_PERSIST_DIR=/app/chroma_db
+      - AUDIO_STORAGE_PATH=/app/recordings
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./recordings:/app/recordings
+    depends_on:
+      - fastapi_db
+      - ollama
+    networks:
+      - pharmasky_network
+
+  fastapi_db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=agent_db
+      - POSTGRES_USER=agent
+      - POSTGRES_PASSWORD=agent
+    volumes:
+      - fastapi_db_data:/var/lib/postgresql/data
+    networks:
+      - pharmasky_network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - pharmasky_network
+
+volumes:
+  fastapi_db_data:
+  ollama_data:
+
+networks:
+  pharmasky_network:
+    external: true

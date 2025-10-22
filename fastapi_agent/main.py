@@ -68,8 +68,8 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(stt.router, prefix="/stt", tags=["Speech-to-Text"])
-app.include_router(agent.router, prefix="/agent", tags=["Agent"])
-app.include_router(calls.router, prefix="/calls", tags=["Calls"])
+app.include_router(agent.router, prefix="/agent", tags=["AI Agent"])
+app.include_router(calls.router, prefix="/calls", tags=["Voice Calls"])
 
 
 @app.get("/")

@@ -80,7 +80,6 @@ INSTALLED_APPS = [
     "invoices",
     "inventory",
     "notifications",
-    "ai_agent",
 ]
 
 MIDDLEWARE = [

@@ -1,8 +1,12 @@
 """
 AI Agent processing endpoints
+Includes all functions from ai_agent Django app
 """
-from fastapi import APIRouter, HTTPException
-from api.schemas import AgentRequest, AgentResponse
+from fastapi import APIRouter, HTTPException, Depends
+from api.schemas import (
+    AgentRequest, AgentResponse, ChatRequest, ChatResponse,
+    VoiceRequest, VoiceResponse, CallRequest, CallResponse
+)
 from services import llm_service, rag_service, mcp_service
 import logging
 import json
@@ -14,81 +18,261 @@ router = APIRouter()
 @router.post("/process", response_model=AgentResponse)
 async def process_query(request: AgentRequest):
     """
-    Process a text query through the AI agent
+    Process a text query through the AI agent with function calling
     
     Steps:
-    1. Query RAG for relevant context
-    2. Send to LLM for processing
-    3. Execute any MCP actions
-    4. Return response
+    1. Extract intent and entities
+    2. Execute appropriate functions via MCP
+    3. Return response with actions
     
     POST /agent/process
-    Body: {"query": "عايز 10 علب باراسيتامول", "session_id": "..."}
+    Body: {"query": "عايز 10 علب باراسيتامول", "session_id": "...", "context": {"user_id": 123}}
     """
     try:
         logger.info(f"Processing query: {request.query}")
         
-        # Step 1: Get context from RAG
-        rag_context = await rag_service.query(request.query, top_k=5)
-        logger.debug(f"RAG context: {rag_context}")
+        # Get user_id from context
+        user_id = request.context.get('user_id') if request.context else None
         
-        # Step 2: Build prompt for LLM
-        system_prompt = """أنت وكيل مبيعات ذكي لشركة توزيع أدوية.
-مهمتك مساعدة الصيادلة في:
-- البحث عن الأدوية
-- التحقق من المخزون
-- إنشاء الطلبات
-- الإجابة عن الاستفسارات
-
-استخدم المعلومات التالية للإجابة:
-"""
-        
-        if rag_context.get('results'):
-            system_prompt += "\n\nمعلومات الأدوية المتاحة:\n"
-            for item in rag_context['results']:
-                system_prompt += f"- {item.get('text', '')}\n"
-        
-        # Step 3: Get LLM response
-        llm_response = await llm_service.chat(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": request.query}
-            ],
-            context=request.context
+        # Process with function calling
+        result = await llm_service.process_with_functions(
+            text=request.query,
+            user_id=user_id,
+            session_id=request.session_id
         )
         
-        logger.debug(f"LLM response: {llm_response}")
-        
-        # Step 4: Extract and execute actions
-        actions = []
-        
-        # Simple intent detection (you can enhance this with better NLP)
-        query_lower = request.query.lower()
-        
-        if any(word in query_lower for word in ['عايز', 'أريد', 'محتاج', 'طلب']):
-            # This might be an order request
-            logger.info("Detected potential order request")
-            # TODO: Extract products and quantities, create order via MCP
-        
-        if any(word in query_lower for word in ['متوفر', 'موجود', 'فيه']):
-            # This might be a stock check
-            logger.info("Detected potential stock check")
-            # TODO: Extract product name, check stock via MCP
+        if not result.get('success'):
+            raise HTTPException(status_code=500, detail=result.get('error', 'Processing failed'))
         
         return AgentResponse(
             success=True,
-            response=llm_response.get('response', ''),
-            actions=actions,
+            response=result.get('response', ''),
+            actions=[{
+                'action': result.get('action', 'general_response'),
+                'result': result.get('result', {})
+            }],
             session_id=request.session_id,
-            metadata={
-                'rag_results_count': len(rag_context.get('results', [])),
-                'intent': 'general'  # TODO: Better intent detection
-            }
+            metadata=result.get('metadata', {})
         )
     
     except Exception as e:
         logger.error(f"Agent processing error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+# Chat API endpoints (from ai_agent)
+@router.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    Text-based chat with AI agent
+    
+    POST /agent/chat
+    Body: {"message": "عايز باراسيتامول", "session_id": 123}
+    """
+    try:
+        logger.info(f"Chat request: {request.message[:100]}...")
+        
+        # Send to Django backend via MCP
+        result = await mcp_service.send_chat_message(
+            message=request.message,
+            session_id=request.session_id,
+            user_id=request.context.get('user_id') if request.context else None
+        )
+        
+        if not result.get('success'):
+            raise HTTPException(status_code=500, detail=result.get('message', 'Chat failed'))
+        
+        return ChatResponse(
+            message=result['message'],
+            session_id=result['session_id']
+        )
+    
+    except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+
+
+@router.post("/voice", response_model=VoiceResponse)
+async def voice(request: VoiceRequest):
+    """
+    Voice-based interaction
+    
+    POST /agent/voice
+    Body: {"audio_base64": "...", "session_id": 123}
+    """
+    try:
+        logger.info(f"Voice request: session_id={request.session_id}")
+        
+        # Process voice message via MCP
+        result = await mcp_service.process_voice_message(
+            audio_base64=request.audio_base64,
+            session_id=request.session_id,
+            user_id=request.context.get('user_id') if request.context else None
+        )
+        
+        if not result.get('success'):
+            raise HTTPException(status_code=500, detail=result.get('message', 'Voice processing failed'))
+        
+        return VoiceResponse(
+            text=result['text'],
+            audio_base64=result['audio_base64'],
+            session_id=result['session_id'],
+            transcription=result['transcription']
+        )
+    
+    except Exception as e:
+        logger.error(f"Voice error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Voice processing failed: {str(e)}")
+
+
+@router.post("/call", response_model=CallResponse)
+async def call(request: CallRequest):
+    """
+    Real-time voice call simulation
+    
+    POST /agent/call
+    Body: {"audio_chunk_base64": "...", "session_id": 123}
+    """
+    try:
+        logger.info(f"Call request: session_id={request.session_id}")
+        
+        # Process call chunk via MCP
+        result = await mcp_service.process_call_chunk(
+            audio_chunk_base64=request.audio_chunk_base64,
+            session_id=request.session_id,
+            user_id=request.context.get('user_id') if request.context else None
+        )
+        
+        if not result.get('success'):
+            raise HTTPException(status_code=500, detail=result.get('message', 'Call processing failed'))
+        
+        return CallResponse(
+            audio_response_base64=result['audio_response_base64'],
+            text_response=result['text_response'],
+            is_final=result['is_final']
+        )
+    
+    except Exception as e:
+        logger.error(f"Call error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Call processing failed: {str(e)}")
+
+
+# AI Agent Function endpoints
+@router.post("/check-availability")
+async def check_availability(medicine_name: str, user_id: int = None):
+    """
+    Check if a medicine is available in Max offers
+    """
+    try:
+        result = await mcp_service.check_availability(medicine_name, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Check availability error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Check availability failed: {str(e)}")
+
+
+@router.post("/suggest-alternative")
+async def suggest_alternative(medicine_name: str):
+    """
+    Suggest alternative medicines
+    """
+    try:
+        result = await mcp_service.suggest_alternative(medicine_name)
+        return result
+    except Exception as e:
+        logger.error(f"Suggest alternative error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Suggest alternative failed: {str(e)}")
+
+
+@router.post("/create-order")
+async def create_order(medicine_name: str, quantity: int, user_id: int):
+    """
+    Create a new order
+    """
+    try:
+        result = await mcp_service.create_order(medicine_name, quantity, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Create order error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Create order failed: {str(e)}")
+
+
+@router.post("/track-order")
+async def track_order(order_id: int, user_id: int):
+    """
+    Track an existing order
+    """
+    try:
+        result = await mcp_service.track_order(order_id, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Track order error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Track order failed: {str(e)}")
+
+
+@router.post("/cancel-order")
+async def cancel_order(order_id: int, user_id: int):
+    """
+    Cancel an existing order
+    """
+    try:
+        result = await mcp_service.cancel_order(order_id, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Cancel order error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cancel order failed: {str(e)}")
+
+
+@router.post("/submit-complaint")
+async def submit_complaint(subject: str, body: str, user_id: int):
+    """
+    Submit a complaint
+    """
+    try:
+        result = await mcp_service.submit_complaint(subject, body, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Submit complaint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Submit complaint failed: {str(e)}")
+
+
+@router.get("/get-wishlist/{user_id}")
+async def get_wishlist(user_id: int):
+    """
+    Get user's wishlist
+    """
+    try:
+        result = await mcp_service.get_wishlist(user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Get wishlist error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Get wishlist failed: {str(e)}")
+
+
+@router.post("/add-to-wishlist")
+async def add_to_wishlist(product_name: str, user_id: int):
+    """
+    Add product to wishlist
+    """
+    try:
+        result = await mcp_service.add_to_wishlist(product_name, user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Add to wishlist error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Add to wishlist failed: {str(e)}")
+
+
+@router.get("/get-order-total/{user_id}")
+async def get_order_total(user_id: int):
+    """
+    Get order total for user
+    """
+    try:
+        result = await mcp_service.get_order_total(user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Get order total error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Get order total failed: {str(e)}")
 
 
 @router.get("/rag/query")
