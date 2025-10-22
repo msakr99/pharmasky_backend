@@ -9,7 +9,7 @@ from api.schemas import (
     EndCallResponse,
     CallDetailResponse
 )
-from services import webrtc_service
+# from services import webrtc_service  # Disabled - using WebSocket instead
 import logging
 import uuid
 from datetime import datetime
