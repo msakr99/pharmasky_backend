@@ -22,4 +22,17 @@ mkdir -p recordings
 
 # Start the service
 echo "🎯 Starting FastAPI service..."
+echo "🌐 API will be available at: http://localhost:8001"
+echo "📚 API docs at: http://localhost:8001/docs"
+echo ""
+echo "📋 Available endpoints:"
+echo "  POST /agent/chat - Text chat"
+echo "  POST /agent/voice - Voice processing"
+echo "  POST /agent/process - Smart processing"
+echo "  POST /agent/check-availability - Check medicine availability"
+echo "  POST /agent/create-order - Create order"
+echo "  GET /agent/get-wishlist/{user_id} - Get wishlist"
+echo "  GET /agent/get-order-total/{user_id} - Get order total"
+echo ""
+
 python main.py
