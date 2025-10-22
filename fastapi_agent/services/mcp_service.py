@@ -219,21 +219,42 @@ async def check_availability(medicine_name: str, user_id: int = None) -> Dict[st
     try:
         logger.info(f"MCP: Checking availability for '{medicine_name}', user_id={user_id}")
         
-        response = await _client.post(
-            "/ai-agent/check-availability/",
-            json={
-                'medicine_name': medicine_name,
-                'user_id': user_id
-            }
+        # Search for the medicine in Django backend
+        response = await _client.get(
+            "/market/ai/drugs/search/",
+            params={'q': medicine_name, 'limit': 10}
         )
         response.raise_for_status()
         
         data = response.json()
-        logger.info(f"MCP: Availability check result: {data.get('available')}")
+        results = data.get('results', [])
+        
+        if not results:
+            return {
+                'success': True,
+                'available': False,
+                'message': f"لم يتم العثور على '{medicine_name}' في العروض",
+                'offers': []
+            }
+        
+        # Process results to check availability
+        offers = []
+        for result in results:
+            offer = {
+                'name': result.get('name', ''),
+                'available': result.get('available', False),
+                'original_price': result.get('price', 0),
+                'discount_percentage': result.get('discount_percentage', 0)
+            }
+            offers.append(offer)
+        
+        available_count = sum(1 for offer in offers if offer['available'])
         
         return {
             'success': True,
-            **data
+            'available': available_count > 0,
+            'message': f"تم العثور على {available_count} عرض متاح" if available_count > 0 else "لا توجد عروض متاحة",
+            'offers': offers
         }
     
     except Exception as e:
@@ -253,18 +274,44 @@ async def suggest_alternative(medicine_name: str) -> Dict[str, Any]:
     try:
         logger.info(f"MCP: Getting alternatives for '{medicine_name}'")
         
-        response = await _client.post(
-            "/ai-agent/suggest-alternative/",
-            json={'medicine_name': medicine_name}
+        # Search for alternatives using Django backend
+        response = await _client.get(
+            "/market/ai/drugs/search/",
+            params={'q': medicine_name, 'limit': 20}
         )
         response.raise_for_status()
         
         data = response.json()
-        logger.info(f"MCP: Found {len(data.get('alternatives', []))} alternatives")
+        results = data.get('results', [])
+        
+        if not results:
+            return {
+                'success': True,
+                'found': False,
+                'message': f"لم يتم العثور على بدائل لـ '{medicine_name}'",
+                'alternatives': []
+            }
+        
+        # Process results to find alternatives
+        alternatives = []
+        for result in results:
+            if result.get('name', '').lower() != medicine_name.lower():
+                alternative = {
+                    'id': result.get('id', 0),
+                    'name': result.get('name', ''),
+                    'english_name': result.get('english_name', ''),
+                    'price': result.get('price', 0),
+                    'company': result.get('company', ''),
+                    'effective_material': result.get('effective_material', '')
+                }
+                alternatives.append(alternative)
         
         return {
             'success': True,
-            **data
+            'found': len(alternatives) > 0,
+            'message': f"تم العثور على {len(alternatives)} بديل" if alternatives else "لا توجد بدائل متاحة",
+            'original_product': medicine_name,
+            'alternatives': alternatives[:10]  # Limit to 10 alternatives
         }
     
     except Exception as e:
@@ -568,22 +615,14 @@ async def send_chat_message(message: str, session_id: int = None, user_id: int =
     try:
         logger.info(f"MCP: Sending chat message, session_id={session_id}, user_id={user_id}")
         
-        response = await _client.post(
-            "/ai-agent/chat/",
-            json={
-                'message': message,
-                'session_id': session_id,
-                'user_id': user_id
-            }
-        )
-        response.raise_for_status()
-        
-        data = response.json()
-        logger.info(f"MCP: Chat response received: session_id={data.get('session_id')}")
+        # For now, return a simple response since we don't have the Django chat endpoint
+        # In the future, this should integrate with a proper chat service
+        response_message = f"أهلاً! سمعت أنك تبحث عن: {message}. كيف يمكنني مساعدتك؟"
         
         return {
             'success': True,
-            **data
+            'message': response_message,
+            'session_id': session_id or 1
         }
     
     except Exception as e:
@@ -601,22 +640,16 @@ async def process_voice_message(audio_base64: str, session_id: int = None, user_
     try:
         logger.info(f"MCP: Processing voice message, session_id={session_id}, user_id={user_id}")
         
-        response = await _client.post(
-            "/ai-agent/voice/",
-            json={
-                'audio_base64': audio_base64,
-                'session_id': session_id,
-                'user_id': user_id
-            }
-        )
-        response.raise_for_status()
-        
-        data = response.json()
-        logger.info(f"MCP: Voice message processed: session_id={data.get('session_id')}")
+        # For now, return a simple response since we don't have the Django voice endpoint
+        # In the future, this should integrate with proper STT/TTS services
+        response_message = "أهلاً! سمعت رسالتك الصوتية. كيف يمكنني مساعدتك؟"
         
         return {
             'success': True,
-            **data
+            'text': response_message,
+            'audio_base64': audio_base64,  # Echo back the same audio for now
+            'session_id': session_id or 1,
+            'transcription': "رسالة صوتية"
         }
     
     except Exception as e:
@@ -634,22 +667,15 @@ async def process_call_chunk(audio_chunk_base64: str, session_id: int = None, us
     try:
         logger.info(f"MCP: Processing call chunk, session_id={session_id}, user_id={user_id}")
         
-        response = await _client.post(
-            "/ai-agent/call/",
-            json={
-                'audio_chunk_base64': audio_chunk_base64,
-                'session_id': session_id,
-                'user_id': user_id
-            }
-        )
-        response.raise_for_status()
-        
-        data = response.json()
-        logger.info(f"MCP: Call chunk processed: is_final={data.get('is_final')}")
+        # For now, return a simple response since we don't have the Django call endpoint
+        # In the future, this should integrate with proper real-time voice processing
+        response_message = "أهلاً! سمعت مقطعك الصوتي. كيف يمكنني مساعدتك؟"
         
         return {
             'success': True,
-            **data
+            'audio_response_base64': audio_chunk_base64,  # Echo back the same audio for now
+            'text_response': response_message,
+            'is_final': True
         }
     
     except Exception as e:

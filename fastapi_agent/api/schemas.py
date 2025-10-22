@@ -26,6 +26,7 @@ class ChatRequest(BaseModel):
     """Request for chat API"""
     message: str = Field(..., description="User message", max_length=5000)
     session_id: Optional[int] = Field(None, description="Chat session ID")
+    context: Optional[Dict[str, Any]] = Field(None, description="User context")
 
 
 class ChatResponse(BaseModel):
@@ -38,6 +39,7 @@ class VoiceRequest(BaseModel):
     """Request for voice API"""
     audio_base64: str = Field(..., description="Base64 encoded audio")
     session_id: Optional[int] = Field(None, description="Chat session ID")
+    context: Optional[Dict[str, Any]] = Field(None, description="User context")
 
 
 class VoiceResponse(BaseModel):
@@ -52,6 +54,7 @@ class CallRequest(BaseModel):
     """Request for call API (streaming)"""
     audio_chunk_base64: str = Field(..., description="Base64 encoded audio chunk")
     session_id: Optional[int] = Field(None, description="Chat session ID")
+    context: Optional[Dict[str, Any]] = Field(None, description="User context")
 
 
 class CallResponse(BaseModel):
