@@ -23,11 +23,10 @@ async def initialize():
     if _client is None:
         logger.info("Initializing ChromaDB...")
         
-        # Create ChromaDB client
-        _client = chromadb.Client(ChromaSettings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=settings.CHROMA_PERSIST_DIR
-        ))
+        # Create ChromaDB client (new API)
+        _client = chromadb.PersistentClient(
+            path=settings.CHROMA_PERSIST_DIR
+        )
         
         # Get or create collection
         _collection = _client.get_or_create_collection(
