@@ -5,14 +5,51 @@ Includes all functions from ai_agent Django app
 from fastapi import APIRouter, HTTPException, Depends
 from api.schemas import (
     AgentRequest, AgentResponse, ChatRequest, ChatResponse,
-    VoiceRequest, VoiceResponse, CallRequest, CallResponse
+    VoiceRequest, VoiceResponse, CallRequest, CallResponse,
+    TokenRequest, TokenResponse
 )
-from services import llm_service, rag_service, mcp_service
+from services import llm_service, rag_service, mcp_service, auth_service
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+async def get_user_from_token_or_context(request) -> int:
+    """
+    Get user_id from token or context
+    
+    Args:
+        request: Request object with token or context
+        
+    Returns:
+        user_id
+        
+    Raises:
+        HTTPException: If no valid user_id found
+    """
+    # Try to get user_id from token first
+    if hasattr(request, 'token') and request.token:
+        auth_result = await auth_service.validate_token_for_agent(request.token)
+        if auth_result.get('success'):
+            return auth_result.get('user_id')
+        else:
+            raise HTTPException(
+                status_code=401, 
+                detail=f"Token validation failed: {auth_result.get('error')}"
+            )
+    
+    # Fallback to context user_id
+    if hasattr(request, 'context') and request.context:
+        user_id = request.context.get('user_id')
+        if user_id:
+            return user_id
+    
+    raise HTTPException(
+        status_code=400, 
+        detail="Either token or user_id in context is required"
+    )
 
 
 @router.post("/process", response_model=AgentResponse)
@@ -26,13 +63,13 @@ async def process_query(request: AgentRequest):
     3. Return response with actions
     
     POST /agent/process
-    Body: {"query": "عايز 10 علب باراسيتامول", "session_id": "...", "context": {"user_id": 123}}
+    Body: {"query": "عايز 10 علب باراسيتامول", "session_id": "...", "token": "jwt_token"}
     """
     try:
         logger.info(f"Processing query: {request.query}")
         
-        # Get user_id from context
-        user_id = request.context.get('user_id') if request.context else None
+        # Get user_id from token or context
+        user_id = await get_user_from_token_or_context(request)
         
         # Process with function calling
         result = await llm_service.process_with_functions(
@@ -67,16 +104,20 @@ async def chat(request: ChatRequest):
     Text-based chat with AI agent
     
     POST /agent/chat
-    Body: {"message": "عايز باراسيتامول", "session_id": 123}
+    Body: {"message": "عايز باراسيتامول", "session_id": 123, "token": "jwt_token"}
     """
     try:
         logger.info(f"Chat request: {request.message[:100]}...")
+        
+        # Get user_id from token or context
+        user_id = await get_user_from_token_or_context(request)
         
         # Send to Django backend via MCP
         result = await mcp_service.send_chat_message(
             message=request.message,
             session_id=request.session_id,
-            user_id=request.context.get('user_id') if request.context else None
+            user_id=user_id,
+            token=request.token
         )
         
         if not result.get('success'):
@@ -98,16 +139,19 @@ async def voice(request: VoiceRequest):
     Voice-based interaction
     
     POST /agent/voice
-    Body: {"audio_base64": "...", "session_id": 123}
+    Body: {"audio_base64": "...", "session_id": 123, "token": "jwt_token"}
     """
     try:
         logger.info(f"Voice request: session_id={request.session_id}")
+        
+        # Get user_id from token or context
+        user_id = await get_user_from_token_or_context(request)
         
         # Process voice message via MCP
         result = await mcp_service.process_voice_message(
             audio_base64=request.audio_base64,
             session_id=request.session_id,
-            user_id=request.context.get('user_id') if request.context else None
+            user_id=user_id
         )
         
         if not result.get('success'):
@@ -131,16 +175,19 @@ async def call(request: CallRequest):
     Real-time voice call simulation
     
     POST /agent/call
-    Body: {"audio_chunk_base64": "...", "session_id": 123}
+    Body: {"audio_chunk_base64": "...", "session_id": 123, "token": "jwt_token"}
     """
     try:
         logger.info(f"Call request: session_id={request.session_id}")
+        
+        # Get user_id from token or context
+        user_id = await get_user_from_token_or_context(request)
         
         # Process call chunk via MCP
         result = await mcp_service.process_call_chunk(
             audio_chunk_base64=request.audio_chunk_base64,
             session_id=request.session_id,
-            user_id=request.context.get('user_id') if request.context else None
+            user_id=user_id
         )
         
         if not result.get('success'):
@@ -157,15 +204,59 @@ async def call(request: CallRequest):
         raise HTTPException(status_code=500, detail=f"Call processing failed: {str(e)}")
 
 
+# Token Authentication endpoints
+@router.post("/verify-token", response_model=TokenResponse)
+async def verify_token(request: TokenRequest):
+    """
+    Verify authentication token
+    
+    POST /agent/verify-token
+    Body: {"token": "jwt_token"}
+    """
+    try:
+        logger.info(f"Verifying token: {request.token[:10]}...")
+        
+        result = await auth_service.verify_token(request.token)
+        
+        return TokenResponse(
+            valid=result.get('valid', False),
+            user_id=result.get('user_id'),
+            user_info=result.get('user_info'),
+            error=result.get('error')
+        )
+    
+    except Exception as e:
+        logger.error(f"Token verification error: {str(e)}")
+        return TokenResponse(
+            valid=False,
+            error=f"Token verification failed: {str(e)}"
+        )
+
+
 # AI Agent Function endpoints
 @router.post("/check-availability")
 async def check_availability(request: dict):
     """
     Check if a medicine is available in Max offers
+    
+    POST /agent/check-availability
+    Body: {"medicine_name": "باراسيتامول", "token": "jwt_token"}
     """
     try:
         medicine_name = request.get('medicine_name')
-        user_id = request.get('user_id')
+        token = request.get('token')
+        
+        # Get user_id from token
+        if token:
+            auth_result = await auth_service.validate_token_for_agent(token)
+            if not auth_result.get('success'):
+                raise HTTPException(status_code=401, detail=auth_result.get('error'))
+            user_id = auth_result.get('user_id')
+        else:
+            user_id = request.get('user_id')
+            if not user_id:
+                raise HTTPException(status_code=400, detail="Either token or user_id is required")
+        
         result = await mcp_service.check_availability(medicine_name, user_id)
         return result
     except Exception as e:

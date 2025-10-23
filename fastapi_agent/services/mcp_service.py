@@ -22,6 +22,27 @@ _client = httpx.AsyncClient(
 )
 
 
+def _get_headers_with_token(token: str = None) -> dict:
+    """
+    Get headers with optional token
+    
+    Args:
+        token: Optional authentication token
+        
+    Returns:
+        Dict with headers
+    """
+    headers = {
+        'X-API-Key': settings.DJANGO_API_KEY,
+        'Content-Type': 'application/json'
+    }
+    
+    if token:
+        headers['Authorization'] = f'Bearer {token}'
+    
+    return headers
+
+
 async def search_drugs(query: str, limit: int = 10) -> Dict[str, Any]:
     """
     Search for drugs in Django backend
@@ -583,15 +604,45 @@ async def get_chat_session(session_id: int, user_id: int) -> Dict[str, Any]:
         }
 
 
-async def send_chat_message(message: str, session_id: int = None, user_id: int = None) -> Dict[str, Any]:
+async def send_chat_message(message: str, session_id: int = None, user_id: int = None, token: str = None) -> Dict[str, Any]:
     """
     Send a chat message and get AI response
+    
+    Args:
+        message: User message
+        session_id: Chat session ID
+        user_id: User ID
+        token: Optional authentication token
     """
     try:
         logger.info(f"MCP: Sending chat message, session_id={session_id}, user_id={user_id}")
         
-        # For now, return a simple response since we don't have the Django chat endpoint
-        # In the future, this should integrate with a proper chat service
+        # Prepare headers with token
+        headers = _get_headers_with_token(token)
+        
+        # Try to send to Django backend with token
+        try:
+            response = await _client.post(
+                "/ai-agent/chat/",
+                headers=headers,
+                json={
+                    'message': message,
+                    'session_id': session_id,
+                    'user_id': user_id
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            return {
+                'success': True,
+                'message': data.get('message', ''),
+                'session_id': data.get('session_id', session_id or 1)
+            }
+        except Exception as django_error:
+            logger.warning(f"Django chat endpoint failed: {str(django_error)}, using fallback")
+        
+        # Fallback response
         response_message = f"أهلاً! سمعت أنك تبحث عن: {message}. كيف يمكنني مساعدتك؟"
         
         return {

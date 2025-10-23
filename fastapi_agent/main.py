@@ -9,6 +9,7 @@ import logging
 from config import settings
 from api.routes import calls, agent, stt, health
 from services import stt_service, rag_service
+from middleware.auth_middleware import token_auth_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -64,6 +65,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Authentication middleware
+app.middleware("http")(token_auth_middleware)
 
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])

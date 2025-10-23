@@ -85,7 +85,23 @@ python main.py
 ```python
 import httpx
 
-# إرسال رسالة نصية
+# إرسال رسالة نصية مع التوكن
+response = await httpx.post("http://localhost:8001/agent/chat", 
+    headers={"Authorization": "Bearer your_jwt_token"},
+    json={
+        "message": "عايز باراسيتامول",
+        "session_id": 123
+    }
+)
+
+# أو مع التوكن في الـ body
+response = await httpx.post("http://localhost:8001/agent/chat", json={
+    "message": "عايز باراسيتامول",
+    "session_id": 123,
+    "token": "your_jwt_token"
+})
+
+# أو مع user_id (fallback)
 response = await httpx.post("http://localhost:8001/agent/chat", json={
     "message": "عايز باراسيتامول",
     "session_id": 123,
@@ -95,21 +111,25 @@ response = await httpx.post("http://localhost:8001/agent/chat", json={
 
 ### مثال على Voice API:
 ```python
-# إرسال رسالة صوتية
-response = await httpx.post("http://localhost:8001/agent/voice", json={
-    "audio_base64": "base64_encoded_audio",
-    "session_id": 123,
-    "context": {"user_id": 456}
-})
+# إرسال رسالة صوتية مع التوكن
+response = await httpx.post("http://localhost:8001/agent/voice", 
+    headers={"Authorization": "Bearer your_jwt_token"},
+    json={
+        "audio_base64": "base64_encoded_audio",
+        "session_id": 123
+    }
+)
 ```
 
 ### مثال على Function Calling:
 ```python
-# فحص توفر دواء
-response = await httpx.post("http://localhost:8001/agent/check-availability", json={
-    "medicine_name": "باراسيتامول",
-    "user_id": 456
-})
+# فحص توفر دواء مع التوكن
+response = await httpx.post("http://localhost:8001/agent/check-availability", 
+    headers={"Authorization": "Bearer your_jwt_token"},
+    json={
+        "medicine_name": "باراسيتامول"
+    }
+)
 ```
 
 ## 🔄 التكامل مع Django
@@ -156,6 +176,38 @@ services:
     environment:
       - DJANGO_API_URL=http://web:8000
       - OLLAMA_URL=http://ollama:11434
+```
+
+## 🔐 المصادقة بالتوكن
+
+### **طرق المصادقة:**
+1. **Authorization Header** - `Bearer your_jwt_token`
+2. **Token in Body** - `{"token": "your_jwt_token"}`
+3. **Fallback** - `{"context": {"user_id": 123}}`
+
+### **مثال على الاستخدام:**
+```python
+# الطريقة المفضلة - Authorization Header
+response = await httpx.post("http://localhost:8001/agent/chat", 
+    headers={"Authorization": "Bearer your_jwt_token"},
+    json={"message": "صباح الخير"}
+)
+
+# أو مع التوكن في الـ body
+response = await httpx.post("http://localhost:8001/agent/chat", 
+    json={
+        "message": "صباح الخير",
+        "token": "your_jwt_token"
+    }
+)
+```
+
+### **التحقق من التوكن:**
+```python
+# التحقق من صحة التوكن
+response = await httpx.post("http://localhost:8001/agent/verify-token", 
+    json={"token": "your_jwt_token"}
+)
 ```
 
 ## 📈 المراقبة

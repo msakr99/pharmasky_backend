@@ -27,6 +27,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., description="User message", max_length=5000)
     session_id: Optional[int] = Field(None, description="Chat session ID")
     context: Optional[Dict[str, Any]] = Field(None, description="User context")
+    token: Optional[str] = Field(None, description="Authentication token")
 
 
 class ChatResponse(BaseModel):
@@ -40,6 +41,7 @@ class VoiceRequest(BaseModel):
     audio_base64: str = Field(..., description="Base64 encoded audio")
     session_id: Optional[int] = Field(None, description="Chat session ID")
     context: Optional[Dict[str, Any]] = Field(None, description="User context")
+    token: Optional[str] = Field(None, description="Authentication token")
 
 
 class VoiceResponse(BaseModel):
@@ -55,6 +57,7 @@ class CallRequest(BaseModel):
     audio_chunk_base64: str = Field(..., description="Base64 encoded audio chunk")
     session_id: Optional[int] = Field(None, description="Chat session ID")
     context: Optional[Dict[str, Any]] = Field(None, description="User context")
+    token: Optional[str] = Field(None, description="Authentication token")
 
 
 class CallResponse(BaseModel):
@@ -130,6 +133,7 @@ class AgentRequest(BaseModel):
     query: str = Field(..., description="User query text")
     session_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
+    token: Optional[str] = Field(None, description="Authentication token")
 
 
 class AgentResponse(BaseModel):
@@ -181,6 +185,20 @@ class CallDetailResponse(BaseModel):
     transcripts: List[Dict[str, Any]] = []
     actions: List[Dict[str, Any]] = []
     summary: Optional[str] = None
+
+
+# Token Authentication Schemas
+class TokenRequest(BaseModel):
+    """Request with token authentication"""
+    token: str = Field(..., description="Authentication token")
+
+
+class TokenResponse(BaseModel):
+    """Response from token validation"""
+    valid: bool
+    user_id: Optional[int] = None
+    user_info: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 
 # Health Check Schema
