@@ -203,6 +203,53 @@ async def call(request: CallRequest):
         raise HTTPException(status_code=500, detail=f"Call processing failed: {str(e)}")
 
 
+# Test endpoint with direct LLM
+@router.post("/smart-chat", response_model=ChatResponse)
+async def smart_chat(request: ChatRequest):
+    """
+    Smart chat endpoint with direct LLM processing
+    
+    POST /agent/smart-chat
+    Body: {"message": "صباح الخير"}
+    """
+    try:
+        logger.info(f"Smart chat request: {request.message[:100]}...")
+        
+        # Use LLM to generate a proper response
+        from services import llm_service
+        
+        system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أنت متخصص في:
+- الأدوية والمستحضرات الطبية
+- العروض والخصومات
+- إدارة الطلبات
+- تتبع الشحنات
+- الشكاوى والاستفسارات
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة."""
+        
+        llm_response = await llm_service.chat([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.message}
+        ])
+        
+        if llm_response.get('success'):
+            response_message = llm_response.get('response', 'أهلاً! كيف يمكنني مساعدتك؟')
+        else:
+            response_message = f"أهلاً! سمعت أنك تقول: {request.message}. كيف يمكنني مساعدتك؟"
+        
+        return ChatResponse(
+            message=response_message,
+            session_id=request.session_id or 1
+        )
+    
+    except Exception as e:
+        logger.error(f"Smart chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Smart chat failed: {str(e)}")
+
+
 # Test endpoint without authentication
 @router.post("/test-chat", response_model=ChatResponse)
 async def test_chat(request: ChatRequest):
@@ -215,8 +262,30 @@ async def test_chat(request: ChatRequest):
     try:
         logger.info(f"Test chat request: {request.message[:100]}...")
         
-        # Simple response for testing
-        response_message = f"أهلاً! سمعت أنك تقول: {request.message}. كيف يمكنني مساعدتك؟"
+        # Use LLM to generate a proper response
+        from services import llm_service
+        
+        system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أنت متخصص في:
+- الأدوية والمستحضرات الطبية
+- العروض والخصومات
+- إدارة الطلبات
+- تتبع الشحنات
+- الشكاوى والاستفسارات
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة."""
+        
+        llm_response = await llm_service.chat([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.message}
+        ])
+        
+        if llm_response.get('success'):
+            response_message = llm_response.get('response', 'أهلاً! كيف يمكنني مساعدتك؟')
+        else:
+            response_message = f"أهلاً! سمعت أنك تقول: {request.message}. كيف يمكنني مساعدتك؟"
         
         return ChatResponse(
             message=response_message,

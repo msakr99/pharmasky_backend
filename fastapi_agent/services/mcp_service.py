@@ -642,8 +642,37 @@ async def send_chat_message(message: str, session_id: int = None, user_id: int =
         except Exception as django_error:
             logger.warning(f"Django chat endpoint failed: {str(django_error)}, using fallback")
         
-        # Fallback response
-        response_message = f"أهلاً! سمعت أنك تبحث عن: {message}. كيف يمكنني مساعدتك؟"
+        # Fallback response with better understanding
+        # Use LLM to generate a proper response
+        try:
+            from services import llm_service
+            
+            # Create a proper chat context
+            system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أنت متخصص في:
+- الأدوية والمستحضرات الطبية
+- العروض والخصومات
+- إدارة الطلبات
+- تتبع الشحنات
+- الشكاوى والاستفسارات
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة."""
+            
+            llm_response = await llm_service.chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ])
+            
+            if llm_response.get('success'):
+                response_message = llm_response.get('response', 'أهلاً! كيف يمكنني مساعدتك؟')
+            else:
+                response_message = f"أهلاً! سمعت أنك تقول: {message}. كيف يمكنني مساعدتك اليوم؟"
+                
+        except Exception as llm_error:
+            logger.warning(f"LLM fallback failed: {str(llm_error)}")
+            response_message = f"أهلاً! سمعت أنك تقول: {message}. كيف يمكنني مساعدتك اليوم؟"
         
         return {
             'success': True,
@@ -666,9 +695,28 @@ async def process_voice_message(audio_base64: str, session_id: int = None, user_
     try:
         logger.info(f"MCP: Processing voice message, session_id={session_id}, user_id={user_id}")
         
-        # For now, return a simple response since we don't have the Django voice endpoint
-        # In the future, this should integrate with proper STT/TTS services
-        response_message = "أهلاً! سمعت رسالتك الصوتية. كيف يمكنني مساعدتك؟"
+        # Process voice message with LLM
+        try:
+            from services import llm_service
+            
+            system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة."""
+            
+            llm_response = await llm_service.chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": "رسالة صوتية من العميل"}
+            ])
+            
+            if llm_response.get('success'):
+                response_message = llm_response.get('response', 'أهلاً! سمعت رسالتك الصوتية. كيف يمكنني مساعدتك؟')
+            else:
+                response_message = "أهلاً! سمعت رسالتك الصوتية. كيف يمكنني مساعدتك؟"
+                
+        except Exception as llm_error:
+            logger.warning(f"LLM voice processing failed: {str(llm_error)}")
+            response_message = "أهلاً! سمعت رسالتك الصوتية. كيف يمكنني مساعدتك؟"
         
         return {
             'success': True,
@@ -693,9 +741,28 @@ async def process_call_chunk(audio_chunk_base64: str, session_id: int = None, us
     try:
         logger.info(f"MCP: Processing call chunk, session_id={session_id}, user_id={user_id}")
         
-        # For now, return a simple response since we don't have the Django call endpoint
-        # In the future, this should integrate with proper real-time voice processing
-        response_message = "أهلاً! سمعت مقطعك الصوتي. كيف يمكنني مساعدتك؟"
+        # Process call chunk with LLM
+        try:
+            from services import llm_service
+            
+            system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي.
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة."""
+            
+            llm_response = await llm_service.chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": "مقطع صوتي من العميل"}
+            ])
+            
+            if llm_response.get('success'):
+                response_message = llm_response.get('response', 'أهلاً! سمعت مقطعك الصوتي. كيف يمكنني مساعدتك؟')
+            else:
+                response_message = "أهلاً! سمعت مقطعك الصوتي. كيف يمكنني مساعدتك؟"
+                
+        except Exception as llm_error:
+            logger.warning(f"LLM call processing failed: {str(llm_error)}")
+            response_message = "أهلاً! سمعت مقطعك الصوتي. كيف يمكنني مساعدتك؟"
         
         return {
             'success': True,

@@ -26,7 +26,8 @@ async def token_auth_middleware(request: Request, call_next):
         "/docs",
         "/openapi.json",
         "/agent/verify-token",
-        "/agent/test-chat"
+        "/agent/test-chat",
+        "/agent/smart-chat"
     ]
     
     # Check if this is a skip path
