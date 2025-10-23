@@ -46,10 +46,9 @@ async def get_user_from_token_or_context(request) -> int:
         if user_id:
             return user_id
     
-    raise HTTPException(
-        status_code=400, 
-        detail="Either token or user_id in context is required"
-    )
+    # For development, use default user_id
+    logger.warning("No token or user_id found, using default user_id=1 for development")
+    return 1
 
 
 @router.post("/process", response_model=AgentResponse)
@@ -202,6 +201,31 @@ async def call(request: CallRequest):
     except Exception as e:
         logger.error(f"Call error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Call processing failed: {str(e)}")
+
+
+# Test endpoint without authentication
+@router.post("/test-chat", response_model=ChatResponse)
+async def test_chat(request: ChatRequest):
+    """
+    Test chat endpoint without authentication (for development)
+    
+    POST /agent/test-chat
+    Body: {"message": "صباح الخير"}
+    """
+    try:
+        logger.info(f"Test chat request: {request.message[:100]}...")
+        
+        # Simple response for testing
+        response_message = f"أهلاً! سمعت أنك تقول: {request.message}. كيف يمكنني مساعدتك؟"
+        
+        return ChatResponse(
+            message=response_message,
+            session_id=request.session_id or 1
+        )
+    
+    except Exception as e:
+        logger.error(f"Test chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Test chat failed: {str(e)}")
 
 
 # Token Authentication endpoints
