@@ -203,6 +203,61 @@ async def call(request: CallRequest):
         raise HTTPException(status_code=500, detail=f"Call processing failed: {str(e)}")
 
 
+# Trained chat endpoint
+@router.post("/trained-chat", response_model=ChatResponse)
+async def trained_chat(request: ChatRequest):
+    """
+    Trained chat endpoint with pharmacy-specific responses
+    
+    POST /agent/trained-chat
+    Body: {"message": "أنت مين؟"}
+    """
+    try:
+        logger.info(f"Trained chat request: {request.message[:100]}...")
+        
+        # Use LLM with training data
+        from services import llm_service
+        
+        # Enhanced system prompt with training data
+        system_prompt = """أنت محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية.
+
+مهمتك مساعدة الصيادلة في إدارة أعمالهم والاستفادة من أفضل العروض المتاحة.
+
+أنت متخصص في:
+- الأدوية والمستحضرات الطبية
+- العروض والخصومات
+- إدارة الطلبات
+- تتبع الشحنات
+- الشكاوى والاستفسارات
+
+أجب بطريقة ودودة ومهنية، واقترح المساعدة المناسبة.
+
+**أمثلة على الردود:**
+- عند السؤال "أنت مين؟" أو "عرف نفسك": أجب "أنا محمد صقر، تيلي سيلز في شركة فارماسكاي لتجارة وتوزيع الأدوية..."
+- عند طلب دواء: قدم الأسعار والعروض المتاحة
+- عند الاستفسار عن العروض: اذكر أفضل العروض الحالية
+- عند الشكر: رد بطريقة ودودة ومهنية"""
+        
+        llm_response = await llm_service.chat([
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.message}
+        ])
+        
+        if llm_response.get('success'):
+            response_message = llm_response.get('response', 'أهلاً! كيف يمكنني مساعدتك؟')
+        else:
+            response_message = f"أهلاً! سمعت أنك تقول: {request.message}. كيف يمكنني مساعدتك؟"
+        
+        return ChatResponse(
+            message=response_message,
+            session_id=request.session_id or 1
+        )
+    
+    except Exception as e:
+        logger.error(f"Trained chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Trained chat failed: {str(e)}")
+
+
 # Test endpoint with direct LLM
 @router.post("/smart-chat", response_model=ChatResponse)
 async def smart_chat(request: ChatRequest):
