@@ -123,6 +123,45 @@ class ModelTrainer:
             logger.error(f"Similarity calculation failed: {str(e)}")
             return 0.0
     
+    def evaluate_medicine_availability(self, input_text: str, expected_output: str, actual_output: str) -> Dict[str, Any]:
+        """Evaluate medicine availability responses"""
+        try:
+            # Check for availability keywords
+            available_keywords = ["متوفر", "موجود", "✅", "سعر", "خصم", "كم علبة"]
+            unavailable_keywords = ["خلصان", "متى يجي", "أول ما يجي", "❌", "بدائل"]
+            
+            # Determine expected availability status
+            is_available_query = any(word in input_text.lower() for word in ["موجود", "متوفر", "عايز", "أريد"])
+            is_unavailable_query = any(word in input_text.lower() for word in ["خلصان", "خلص", "مش موجود"])
+            
+            # Check actual response
+            has_available_keywords = any(keyword in actual_output for keyword in available_keywords)
+            has_unavailable_keywords = any(keyword in actual_output for keyword in unavailable_keywords)
+            
+            # Calculate availability match score
+            availability_match = 0
+            if is_available_query and has_available_keywords:
+                availability_match = 1
+            elif is_unavailable_query and has_unavailable_keywords:
+                availability_match = 1
+            
+            # Calculate overall similarity
+            similarity = self.calculate_similarity(actual_output, expected_output)
+            
+            return {
+                "similarity": similarity,
+                "availability_match": availability_match,
+                "is_available_query": is_available_query,
+                "is_unavailable_query": is_unavailable_query,
+                "has_available_keywords": has_available_keywords,
+                "has_unavailable_keywords": has_unavailable_keywords,
+                "score": (similarity + availability_match) / 2 * 100
+            }
+            
+        except Exception as e:
+            logger.error(f"Medicine availability evaluation failed: {str(e)}")
+            return {"similarity": 0, "availability_match": 0, "score": 0}
+    
     async def fine_tune_model(self, custom_examples: List[Dict[str, Any]] = None):
         """Fine-tune the model with custom examples"""
         try:
